@@ -1,0 +1,3034 @@
+[
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-20-1",
+    "variant": "C_minus_pkt_size_dist",
+    "seed": 0,
+    "n_features": 63,
+    "n_fit": 23483,
+    "n_cal_benign": 815,
+    "n_test": 3209,
+    "n_test_benign": 3193,
+    "n_test_mal": 16,
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "fit_seconds": 15.81,
+    "infer_us_per_flow": 2.17,
+    "fpr0.001": {
+      "threshold": 0.004245670171298306,
+      "tp": 16,
+      "fp": 10,
+      "fn": 0,
+      "tn": 3183,
+      "precision": 0.6153846153846154,
+      "recall": 1.0,
+      "f1": 0.761904761904762,
+      "fpr": 0.0031318509238960224,
+      "fpr_ci": [
+        0.0017020562969602597,
+        0.005755804611756644
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 5,
+      "false_incidents": 3,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.0010860262070185732,
+      "tp": 16,
+      "fp": 613,
+      "fn": 0,
+      "tn": 2580,
+      "precision": 0.025437201907790145,
+      "recall": 1.0,
+      "f1": 0.04961240310077519,
+      "fpr": 0.19198246163482618,
+      "fpr_ci": [
+        0.17869431551490547,
+        0.2060108885214785
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 13,
+      "false_incidents": 11,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "resp_p": 23.74,
+      "o_syn": 12.56,
+      "r_urg": 12.3,
+      "proto": 11.48,
+      "o_fin": 10.75,
+      "o_payload_pkt_frac": 7.3,
+      "first1_signed_size": 6.58,
+      "r_fin": 4.43,
+      "orig_ip_bytes": 3.24,
+      "r_ack": 3.19
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-34-1",
+    "variant": "C_minus_pkt_size_dist",
+    "seed": 0,
+    "n_features": 63,
+    "n_fit": 9528,
+    "n_cal_benign": 1608,
+    "n_test": 23145,
+    "n_test_benign": 1923,
+    "n_test_mal": 21222,
+    "pr_auc": 0.9936666693831422,
+    "roc_auc": 0.9564326244711272,
+    "fit_seconds": 10.92,
+    "infer_us_per_flow": 1.3,
+    "fpr0.001": {
+      "threshold": 0.007139744851188213,
+      "tp": 21222,
+      "fp": 116,
+      "fn": 0,
+      "tn": 1807,
+      "precision": 0.994563689192989,
+      "recall": 1.0,
+      "f1": 0.9972744360902256,
+      "fpr": 0.06032241289651586,
+      "fpr_ci": [
+        0.050532230626672454,
+        0.07186579108927968
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 0.11888606163415323
+    },
+    "fpr0.001_excl_zero_pkt_records": {
+      "threshold": 0.007139744851188213,
+      "tp": 6962,
+      "fp": 116,
+      "fn": 0,
+      "tn": 1807,
+      "precision": 0.9836111896015823,
+      "recall": 1.0,
+      "f1": 0.9917378917378917,
+      "fpr": 0.06032241289651586,
+      "fpr_ci": [
+        0.050532230626672454,
+        0.07186579108927968
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9883277642675651
+    },
+    "fpr0.01": {
+      "threshold": 0.003168947808461259,
+      "tp": 21222,
+      "fp": 148,
+      "fn": 0,
+      "tn": 1775,
+      "precision": 0.9930744033692092,
+      "recall": 1.0,
+      "f1": 0.9965251690458302,
+      "fpr": 0.07696307852314092,
+      "fpr_ci": [
+        0.06587564054317147,
+        0.0897373584703437
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 12,
+      "false_incidents": 8,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 0.11888606163415323
+    },
+    "fpr0.01_excl_zero_pkt_records": {
+      "threshold": 0.003168947808461259,
+      "tp": 6962,
+      "fp": 148,
+      "fn": 0,
+      "tn": 1775,
+      "precision": 0.9791842475386779,
+      "recall": 1.0,
+      "f1": 0.989482660602615,
+      "fpr": 0.07696307852314092,
+      "fpr_ci": [
+        0.06587564054317147,
+        0.0897373584703437
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 12,
+      "false_incidents": 8,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9883277642675651
+    },
+    "top_features": {
+      "o_syn": 38.24,
+      "r_urg": 24.68,
+      "r_fin": 7.54,
+      "o_urg": 7.3,
+      "r_psh": 6.75,
+      "r_syn": 4.43,
+      "o_fin": 3.44,
+      "o_payload_pkt_frac": 1.35,
+      "proto": 1.12,
+      "orig_bytes": 1.12
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-8-1",
+    "variant": "C_minus_pkt_size_dist",
+    "seed": 0,
+    "n_features": 63,
+    "n_fit": 18447,
+    "n_cal_benign": 1133,
+    "n_test": 10403,
+    "n_test_benign": 2181,
+    "n_test_mal": 8222,
+    "pr_auc": 0.999817621792912,
+    "roc_auc": 0.999312297856446,
+    "fit_seconds": 14.18,
+    "infer_us_per_flow": 1.89,
+    "fpr0.001": {
+      "threshold": 0.006879145173220242,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.004026642479344922,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "o_rst": 35.35,
+      "r_psh": 23.33,
+      "r_urg": 10.23,
+      "resp_p": 8.37,
+      "first1_signed_size": 7.3,
+      "o_ack": 7.04,
+      "o_syn": 2.92,
+      "r_fin": 1.67,
+      "o_payload_pkt_frac": 1.27,
+      "o_psh": 0.31
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-20-1",
+    "variant": "C_minus_timing",
+    "seed": 0,
+    "n_features": 62,
+    "n_fit": 23483,
+    "n_cal_benign": 815,
+    "n_test": 3209,
+    "n_test_benign": 3193,
+    "n_test_mal": 16,
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "fit_seconds": 14.53,
+    "infer_us_per_flow": 2.1,
+    "fpr0.001": {
+      "threshold": 0.016859408379680963,
+      "tp": 16,
+      "fp": 2,
+      "fn": 0,
+      "tn": 3191,
+      "precision": 0.8888888888888888,
+      "recall": 1.0,
+      "f1": 0.9411764705882353,
+      "fpr": 0.0006263701847792045,
+      "fpr_ci": [
+        0.0001717865103714909,
+        0.002281134522688139
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 4,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.0030083155294300845,
+      "tp": 16,
+      "fp": 600,
+      "fn": 0,
+      "tn": 2593,
+      "precision": 0.025974025974025976,
+      "recall": 1.0,
+      "f1": 0.05063291139240507,
+      "fpr": 0.18791105543376135,
+      "fpr_ci": [
+        0.17473918714665268,
+        0.20183298959178822
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 8,
+      "false_incidents": 6,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "o_rst": 23.77,
+      "o_psh": 15.84,
+      "r_urg": 14.16,
+      "resp_p": 13.95,
+      "r_rst": 7.98,
+      "o_size_p90": 3.54,
+      "o_fin": 3.52,
+      "o_syn": 3.33,
+      "r_syn": 2.64,
+      "o_size_med": 2.34
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-34-1",
+    "variant": "C_minus_timing",
+    "seed": 0,
+    "n_features": 62,
+    "n_fit": 9528,
+    "n_cal_benign": 1608,
+    "n_test": 23145,
+    "n_test_benign": 1923,
+    "n_test_mal": 21222,
+    "pr_auc": 0.9866985565683225,
+    "roc_auc": 0.9456121388762816,
+    "fit_seconds": 11.26,
+    "infer_us_per_flow": 1.31,
+    "fpr0.001": {
+      "threshold": 0.00558181722168152,
+      "tp": 21222,
+      "fp": 116,
+      "fn": 0,
+      "tn": 1807,
+      "precision": 0.994563689192989,
+      "recall": 1.0,
+      "f1": 0.9972744360902256,
+      "fpr": 0.06032241289651586,
+      "fpr_ci": [
+        0.050532230626672454,
+        0.07186579108927968
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.001_excl_zero_pkt_records": {
+      "threshold": 0.00558181722168152,
+      "tp": 6962,
+      "fp": 116,
+      "fn": 0,
+      "tn": 1807,
+      "precision": 0.9836111896015823,
+      "recall": 1.0,
+      "f1": 0.9917378917378917,
+      "fpr": 0.06032241289651586,
+      "fpr_ci": [
+        0.050532230626672454,
+        0.07186579108927968
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9688861366626046
+    },
+    "fpr0.01": {
+      "threshold": 0.005342964783370485,
+      "tp": 21222,
+      "fp": 160,
+      "fn": 0,
+      "tn": 1763,
+      "precision": 0.9925170704330746,
+      "recall": 1.0,
+      "f1": 0.9962444840860013,
+      "fpr": 0.08320332813312532,
+      "fpr_ci": [
+        0.07167416044220624,
+        0.09639445505789505
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 12,
+      "false_incidents": 8,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.01_excl_zero_pkt_records": {
+      "threshold": 0.005342964783370485,
+      "tp": 6962,
+      "fp": 160,
+      "fn": 0,
+      "tn": 1763,
+      "precision": 0.977534400449312,
+      "recall": 1.0,
+      "f1": 0.988639591025277,
+      "fpr": 0.08320332813312532,
+      "fpr_ci": [
+        0.07167416044220624,
+        0.09639445505789505
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 12,
+      "false_incidents": 8,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9688861366626046
+    },
+    "top_features": {
+      "r_fin": 40.66,
+      "o_payload_pkt_frac": 26.13,
+      "r_rst": 6.69,
+      "o_syn": 6.64,
+      "first1_signed_size": 3.7,
+      "o_first_payload_len": 3.22,
+      "o_size_min": 3.2,
+      "o_first_payload_entropy": 1.91,
+      "r_ack": 1.76,
+      "o_size_max": 1.2
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-8-1",
+    "variant": "C_minus_timing",
+    "seed": 0,
+    "n_features": 62,
+    "n_fit": 18447,
+    "n_cal_benign": 1133,
+    "n_test": 10403,
+    "n_test_benign": 2181,
+    "n_test_mal": 8222,
+    "pr_auc": 0.9995746083697301,
+    "roc_auc": 0.9990829894543787,
+    "fit_seconds": 14.07,
+    "infer_us_per_flow": 3.21,
+    "fpr0.001": {
+      "threshold": 0.01122701850982252,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.011225314299304932,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "o_syn": 47.14,
+      "r_urg": 16.3,
+      "r_ack": 12.8,
+      "o_ack": 6.25,
+      "o_size_med": 5.5,
+      "resp_p": 4.46,
+      "o_size_min": 2.54,
+      "r_rst": 1.09,
+      "r_size_p90": 1.01,
+      "first1_signed_size": 0.91
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-20-1",
+    "variant": "C_minus_tcp_flags",
+    "seed": 0,
+    "n_features": 63,
+    "n_fit": 23483,
+    "n_cal_benign": 815,
+    "n_test": 3209,
+    "n_test_benign": 3193,
+    "n_test_mal": 16,
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "fit_seconds": 15.06,
+    "infer_us_per_flow": 1.79,
+    "fpr0.001": {
+      "threshold": 0.10147346728853926,
+      "tp": 16,
+      "fp": 1,
+      "fn": 0,
+      "tn": 3192,
+      "precision": 0.9411764705882353,
+      "recall": 1.0,
+      "f1": 0.9696969696969697,
+      "fpr": 0.00031318509238960227,
+      "fpr_ci": [
+        5.528557631306744e-05,
+        0.0017720179722894034
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.0029271825498312885,
+      "tp": 16,
+      "fp": 610,
+      "fn": 0,
+      "tn": 2583,
+      "precision": 0.025559105431309903,
+      "recall": 1.0,
+      "f1": 0.049844236760124616,
+      "fpr": 0.1910429063576574,
+      "fpr_ci": [
+        0.17778138327534646,
+        0.20504696830766603
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 25,
+      "false_incidents": 23,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "proto": 62.7,
+      "resp_p": 13.76,
+      "o_first_payload_entropy": 7.21,
+      "orig_ip_bytes": 4.52,
+      "o_payload_pkt_frac": 2.93,
+      "o_size_med": 2.59,
+      "first1_signed_size": 2.28,
+      "o_size_max": 1.52,
+      "o_size_mean": 0.52,
+      "o_first_payload_len": 0.29
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-34-1",
+    "variant": "C_minus_tcp_flags",
+    "seed": 0,
+    "n_features": 63,
+    "n_fit": 9528,
+    "n_cal_benign": 1608,
+    "n_test": 23145,
+    "n_test_benign": 1923,
+    "n_test_mal": 21222,
+    "pr_auc": 0.9903211094297205,
+    "roc_auc": 0.9480440484229491,
+    "fit_seconds": 10.48,
+    "infer_us_per_flow": 1.68,
+    "fpr0.001": {
+      "threshold": 0.008783258994470404,
+      "tp": 21222,
+      "fp": 125,
+      "fn": 0,
+      "tn": 1798,
+      "precision": 0.9941443762589591,
+      "recall": 1.0,
+      "f1": 0.9970635908759896,
+      "fpr": 0.06500260010400416,
+      "fpr_ci": [
+        0.05482787706387521,
+        0.07691185701701653
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 7,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.001_excl_zero_pkt_records": {
+      "threshold": 0.008783258994470404,
+      "tp": 6962,
+      "fp": 125,
+      "fn": 0,
+      "tn": 1798,
+      "precision": 0.982362071398335,
+      "recall": 1.0,
+      "f1": 0.9911025695779059,
+      "fpr": 0.06500260010400416,
+      "fpr_ci": [
+        0.05482787706387521,
+        0.07691185701701653
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 7,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9812591712071016
+    },
+    "fpr0.01": {
+      "threshold": 0.008293905395048668,
+      "tp": 21222,
+      "fp": 140,
+      "fn": 0,
+      "tn": 1783,
+      "precision": 0.9934463065256062,
+      "recall": 1.0,
+      "f1": 0.9967123802367085,
+      "fpr": 0.07280291211648465,
+      "fpr_ci": [
+        0.062022456147381486,
+        0.08528679854174291
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 7,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.01_excl_zero_pkt_records": {
+      "threshold": 0.008293905395048668,
+      "tp": 6962,
+      "fp": 140,
+      "fn": 0,
+      "tn": 1783,
+      "precision": 0.9802872430301324,
+      "recall": 1.0,
+      "f1": 0.9900455062571104,
+      "fpr": 0.07280291211648465,
+      "fpr_ci": [
+        0.062022456147381486,
+        0.08528679854174291
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 7,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9812591712071016
+    },
+    "top_features": {
+      "o_size_med": 35.42,
+      "o_size_mean": 28.2,
+      "o_size_min": 14.72,
+      "o_size_max": 6.17,
+      "proto": 2.91,
+      "first1_signed_size": 2.54,
+      "dns_qname_labels": 1.53,
+      "o_payload_pkt_frac": 1.35,
+      "o_first_payload_len": 1.2,
+      "r_size_med": 1.16
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-8-1",
+    "variant": "C_minus_tcp_flags",
+    "seed": 0,
+    "n_features": 63,
+    "n_fit": 18447,
+    "n_cal_benign": 1133,
+    "n_test": 10403,
+    "n_test_benign": 2181,
+    "n_test_mal": 8222,
+    "pr_auc": 0.9992377089108451,
+    "roc_auc": 0.9990829894543787,
+    "fit_seconds": 14.22,
+    "infer_us_per_flow": 2.22,
+    "fpr0.001": {
+      "threshold": 0.008452391801937515,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.008449321655738602,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "proto": 78.32,
+      "o_size_p90": 7.18,
+      "resp_p": 6.58,
+      "o_payload_pkt_frac": 1.66,
+      "o_size_mean": 1.63,
+      "first1_signed_size": 0.86,
+      "o_size_med": 0.75,
+      "o_first_payload_entropy": 0.61,
+      "orig_ip_bytes": 0.59,
+      "o_first_payload_len": 0.54
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-20-1",
+    "variant": "C_minus_first_n_sizes",
+    "seed": 0,
+    "n_features": 70,
+    "n_fit": 23483,
+    "n_cal_benign": 815,
+    "n_test": 3209,
+    "n_test_benign": 3193,
+    "n_test_mal": 16,
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "fit_seconds": 15.96,
+    "infer_us_per_flow": 2.72,
+    "fpr0.001": {
+      "threshold": 0.02076035026111801,
+      "tp": 16,
+      "fp": 2,
+      "fn": 0,
+      "tn": 3191,
+      "precision": 0.8888888888888888,
+      "recall": 1.0,
+      "f1": 0.9411764705882353,
+      "fpr": 0.0006263701847792045,
+      "fpr_ci": [
+        0.0001717865103714909,
+        0.002281134522688139
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 4,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.0022962511764376527,
+      "tp": 16,
+      "fp": 72,
+      "fn": 0,
+      "tn": 3121,
+      "precision": 0.18181818181818182,
+      "recall": 1.0,
+      "f1": 0.3076923076923077,
+      "fpr": 0.022549326652051362,
+      "fpr_ci": [
+        0.017944716364211535,
+        0.028301428580849247
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 25,
+      "false_incidents": 23,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "r_urg": 30.65,
+      "resp_p": 13.16,
+      "o_psh": 12.01,
+      "r_ack": 8.03,
+      "o_urg": 7.26,
+      "r_psh": 7.09,
+      "o_first_payload_len": 6.04,
+      "o_size_max": 5.4,
+      "r_fin": 2.8,
+      "o_size_p90": 2.27
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-34-1",
+    "variant": "C_minus_first_n_sizes",
+    "seed": 0,
+    "n_features": 70,
+    "n_fit": 9528,
+    "n_cal_benign": 1608,
+    "n_test": 23145,
+    "n_test_benign": 1923,
+    "n_test_mal": 21222,
+    "pr_auc": 0.9866695870892528,
+    "roc_auc": 0.9490905100344998,
+    "fit_seconds": 11.56,
+    "infer_us_per_flow": 1.55,
+    "fpr0.001": {
+      "threshold": 0.004941923784932892,
+      "tp": 21220,
+      "fp": 114,
+      "fn": 2,
+      "tn": 1809,
+      "precision": 0.9946564169869692,
+      "recall": 0.9999057581754783,
+      "f1": 0.9972741799041264,
+      "fpr": 0.059282371294851796,
+      "fpr_ci": [
+        0.04958000851656845,
+        0.070742077118286
+      ],
+      "recall_ci": [
+        0.9996564078766573,
+        0.9999741556530358
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 0.9999305266083091,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.001_excl_zero_pkt_records": {
+      "threshold": 0.004941923784932892,
+      "tp": 6960,
+      "fp": 114,
+      "fn": 2,
+      "tn": 1809,
+      "precision": 0.9838846480067854,
+      "recall": 0.9997127262280954,
+      "f1": 0.9917355371900826,
+      "fpr": 0.059282371294851796,
+      "fpr_ci": [
+        0.04958000851656845,
+        0.070742077118286
+      ],
+      "recall_ci": [
+        0.9989530608794508,
+        0.9999212172838656
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 0.9925373134328358,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9668100087391683
+    },
+    "fpr0.01": {
+      "threshold": 0.003334168297284875,
+      "tp": 21220,
+      "fp": 144,
+      "fn": 2,
+      "tn": 1779,
+      "precision": 0.9932596891967796,
+      "recall": 0.9999057581754783,
+      "f1": 0.9965716432630443,
+      "fpr": 0.0748829953198128,
+      "fpr_ci": [
+        0.06394773650062095,
+        0.08751339035069884
+      ],
+      "recall_ci": [
+        0.9996564078766573,
+        0.9999741556530358
+      ],
+      "incidents": 8,
+      "false_incidents": 3,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 0.9999305266083091,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.01_excl_zero_pkt_records": {
+      "threshold": 0.003334168297284875,
+      "tp": 6960,
+      "fp": 144,
+      "fn": 2,
+      "tn": 1779,
+      "precision": 0.9797297297297297,
+      "recall": 0.9997127262280954,
+      "f1": 0.9896203611545571,
+      "fpr": 0.0748829953198128,
+      "fpr_ci": [
+        0.06394773650062095,
+        0.08751339035069884
+      ],
+      "recall_ci": [
+        0.9989530608794508,
+        0.9999212172838656
+      ],
+      "incidents": 8,
+      "false_incidents": 3,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 0.9925373134328358,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9668100087391683
+    },
+    "top_features": {
+      "r_urg": 49.27,
+      "o_psh": 10.18,
+      "o_rst": 8.09,
+      "r_ack": 5.96,
+      "r_rst": 4.69,
+      "o_syn": 3.83,
+      "r_syn": 3.28,
+      "o_ack": 2.47,
+      "o_size_min": 2.42,
+      "r_fin": 2.29
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-8-1",
+    "variant": "C_minus_first_n_sizes",
+    "seed": 0,
+    "n_features": 70,
+    "n_fit": 18447,
+    "n_cal_benign": 1133,
+    "n_test": 10403,
+    "n_test_benign": 2181,
+    "n_test_mal": 8222,
+    "pr_auc": 0.9998176217929122,
+    "roc_auc": 0.999312297856446,
+    "fit_seconds": 13.8,
+    "infer_us_per_flow": 1.66,
+    "fpr0.001": {
+      "threshold": 0.00591823299785421,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.005851136882529328,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "r_psh": 24.75,
+      "r_fin": 23.56,
+      "o_syn": 16.23,
+      "r_urg": 6.91,
+      "o_fin": 6.13,
+      "resp_p": 5.51,
+      "proto": 3.45,
+      "o_size_med": 2.96,
+      "o_first_payload_len": 1.98,
+      "o_payload_pkt_frac": 1.85
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-20-1",
+    "variant": "C_minus_dns_meta",
+    "seed": 0,
+    "n_features": 67,
+    "n_fit": 23483,
+    "n_cal_benign": 815,
+    "n_test": 3209,
+    "n_test_benign": 3193,
+    "n_test_mal": 16,
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "fit_seconds": 15.07,
+    "infer_us_per_flow": 1.55,
+    "fpr0.001": {
+      "threshold": 0.030408236897481986,
+      "tp": 16,
+      "fp": 2,
+      "fn": 0,
+      "tn": 3191,
+      "precision": 0.8888888888888888,
+      "recall": 1.0,
+      "f1": 0.9411764705882353,
+      "fpr": 0.0006263701847792045,
+      "fpr_ci": [
+        0.0001717865103714909,
+        0.002281134522688139
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 4,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.0009129640216293887,
+      "tp": 16,
+      "fp": 103,
+      "fn": 0,
+      "tn": 3090,
+      "precision": 0.13445378151260504,
+      "recall": 1.0,
+      "f1": 0.23703703703703705,
+      "fpr": 0.03225806451612903,
+      "fpr_ci": [
+        0.026669570696260615,
+        0.03897071626697211
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 25,
+      "false_incidents": 23,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "resp_p": 21.28,
+      "o_size_min": 11.76,
+      "o_psh": 11.72,
+      "r_psh": 10.61,
+      "r_fin": 9.18,
+      "proto": 5.71,
+      "o_size_mean": 5.61,
+      "o_ack": 4.65,
+      "o_urg": 3.1,
+      "o_size_max": 2.78
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-34-1",
+    "variant": "C_minus_dns_meta",
+    "seed": 0,
+    "n_features": 67,
+    "n_fit": 9528,
+    "n_cal_benign": 1608,
+    "n_test": 23145,
+    "n_test_benign": 1923,
+    "n_test_mal": 21222,
+    "pr_auc": 0.9907185854365407,
+    "roc_auc": 0.9537233925508184,
+    "fit_seconds": 11.24,
+    "infer_us_per_flow": 1.26,
+    "fpr0.001": {
+      "threshold": 0.004758980364087112,
+      "tp": 21220,
+      "fp": 121,
+      "fn": 2,
+      "tn": 1802,
+      "precision": 0.9943301625978164,
+      "recall": 0.9999057581754783,
+      "f1": 0.9971101661067123,
+      "fpr": 0.06292251690067603,
+      "fpr_ci": [
+        0.05291660812551581,
+        0.07467125379318056
+      ],
+      "recall_ci": [
+        0.9996564078766573,
+        0.9999741556530358
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 0.9999305266083091,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.001_excl_zero_pkt_records": {
+      "threshold": 0.004758980364087112,
+      "tp": 6960,
+      "fp": 121,
+      "fn": 2,
+      "tn": 1802,
+      "precision": 0.9829120180765428,
+      "recall": 0.9997127262280954,
+      "f1": 0.9912411877803887,
+      "fpr": 0.06292251690067603,
+      "fpr_ci": [
+        0.05291660812551581,
+        0.07467125379318056
+      ],
+      "recall_ci": [
+        0.9989530608794508,
+        0.9999212172838656
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 0.9925373134328358,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9790463276554752
+    },
+    "fpr0.01": {
+      "threshold": 0.001200511664161922,
+      "tp": 21222,
+      "fp": 148,
+      "fn": 0,
+      "tn": 1775,
+      "precision": 0.9930744033692092,
+      "recall": 1.0,
+      "f1": 0.9965251690458302,
+      "fpr": 0.07696307852314092,
+      "fpr_ci": [
+        0.06587564054317147,
+        0.0897373584703437
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 12,
+      "false_incidents": 8,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.01_excl_zero_pkt_records": {
+      "threshold": 0.001200511664161922,
+      "tp": 6962,
+      "fp": 148,
+      "fn": 0,
+      "tn": 1775,
+      "precision": 0.9791842475386779,
+      "recall": 1.0,
+      "f1": 0.989482660602615,
+      "fpr": 0.07696307852314092,
+      "fpr_ci": [
+        0.06587564054317147,
+        0.0897373584703437
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 12,
+      "false_incidents": 8,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9790463276554752
+    },
+    "top_features": {
+      "o_urg": 23.24,
+      "r_syn": 19.01,
+      "o_syn": 17.59,
+      "o_psh": 14.52,
+      "proto": 12.4,
+      "r_fin": 6.28,
+      "o_payload_pkt_frac": 1.78,
+      "r_rst": 1.19,
+      "o_first_payload_entropy": 0.74,
+      "o_fin": 0.59
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-8-1",
+    "variant": "C_minus_dns_meta",
+    "seed": 0,
+    "n_features": 67,
+    "n_fit": 18447,
+    "n_cal_benign": 1133,
+    "n_test": 10403,
+    "n_test_benign": 2181,
+    "n_test_mal": 8222,
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "fit_seconds": 14.2,
+    "infer_us_per_flow": 1.44,
+    "fpr0.001": {
+      "threshold": 0.004150635888301278,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.002427787952109637,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "o_ack": 21.23,
+      "o_urg": 18.17,
+      "o_rst": 16.26,
+      "r_fin": 6.87,
+      "o_psh": 6.66,
+      "r_psh": 6.03,
+      "first1_signed_size": 4.65,
+      "resp_p": 4.25,
+      "r_rst": 3.6,
+      "o_size_max": 2.16
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-20-1",
+    "variant": "C_minus_http_meta",
+    "seed": 0,
+    "n_features": 68,
+    "n_fit": 23483,
+    "n_cal_benign": 815,
+    "n_test": 3209,
+    "n_test_benign": 3193,
+    "n_test_mal": 16,
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "fit_seconds": 15.38,
+    "infer_us_per_flow": 2.12,
+    "fpr0.001": {
+      "threshold": 0.016923782053257615,
+      "tp": 16,
+      "fp": 2,
+      "fn": 0,
+      "tn": 3191,
+      "precision": 0.8888888888888888,
+      "recall": 1.0,
+      "f1": 0.9411764705882353,
+      "fpr": 0.0006263701847792045,
+      "fpr_ci": [
+        0.0001717865103714909,
+        0.002281134522688139
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 4,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.0009901616610632322,
+      "tp": 16,
+      "fp": 279,
+      "fn": 0,
+      "tn": 2914,
+      "precision": 0.05423728813559322,
+      "recall": 1.0,
+      "f1": 0.10289389067524116,
+      "fpr": 0.08737864077669903,
+      "fpr_ci": [
+        0.07807281653216493,
+        0.0976761476955278
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 25,
+      "false_incidents": 23,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "r_urg": 18.03,
+      "resp_p": 15.52,
+      "r_syn": 13.79,
+      "r_psh": 9.79,
+      "o_ack": 8.0,
+      "o_fin": 7.26,
+      "o_first_payload_len": 4.73,
+      "o_size_med": 4.45,
+      "r_rst": 3.2,
+      "first1_signed_size": 3.12
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-34-1",
+    "variant": "C_minus_http_meta",
+    "seed": 0,
+    "n_features": 68,
+    "n_fit": 9528,
+    "n_cal_benign": 1608,
+    "n_test": 23145,
+    "n_test_benign": 1923,
+    "n_test_mal": 21222,
+    "pr_auc": 0.990763838393315,
+    "roc_auc": 0.9492074914360253,
+    "fit_seconds": 11.63,
+    "infer_us_per_flow": 1.46,
+    "fpr0.001": {
+      "threshold": 0.002933037280559174,
+      "tp": 21222,
+      "fp": 113,
+      "fn": 0,
+      "tn": 1810,
+      "precision": 0.9947035387860323,
+      "recall": 1.0,
+      "f1": 0.9973447376459806,
+      "fpr": 0.05876235049401976,
+      "fpr_ci": [
+        0.04910423568965882,
+        0.0701798819046468
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.001_excl_zero_pkt_records": {
+      "threshold": 0.002933037280559174,
+      "tp": 6962,
+      "fp": 113,
+      "fn": 0,
+      "tn": 1810,
+      "precision": 0.9840282685512367,
+      "recall": 1.0,
+      "f1": 0.991949846833369,
+      "fpr": 0.05876235049401976,
+      "fpr_ci": [
+        0.04910423568965882,
+        0.0701798819046468
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9825052718720595
+    },
+    "fpr0.01": {
+      "threshold": 0.002606019866352491,
+      "tp": 21222,
+      "fp": 140,
+      "fn": 0,
+      "tn": 1783,
+      "precision": 0.9934463065256062,
+      "recall": 1.0,
+      "f1": 0.9967123802367085,
+      "fpr": 0.07280291211648465,
+      "fpr_ci": [
+        0.062022456147381486,
+        0.08528679854174291
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.01_excl_zero_pkt_records": {
+      "threshold": 0.002606019866352491,
+      "tp": 6962,
+      "fp": 140,
+      "fn": 0,
+      "tn": 1783,
+      "precision": 0.9802872430301324,
+      "recall": 1.0,
+      "f1": 0.9900455062571104,
+      "fpr": 0.07280291211648465,
+      "fpr_ci": [
+        0.062022456147381486,
+        0.08528679854174291
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9825052718720595
+    },
+    "top_features": {
+      "o_first_payload_len": 37.72,
+      "r_rst": 18.8,
+      "o_psh": 18.12,
+      "o_first_payload_entropy": 7.32,
+      "o_size_max": 7.12,
+      "o_payload_pkt_frac": 2.84,
+      "first1_signed_size": 1.81,
+      "o_size_min": 1.23,
+      "proto": 1.0,
+      "r_payload_pkt_frac": 0.75
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-8-1",
+    "variant": "C_minus_http_meta",
+    "seed": 0,
+    "n_features": 68,
+    "n_fit": 18447,
+    "n_cal_benign": 1133,
+    "n_test": 10403,
+    "n_test_benign": 2181,
+    "n_test_mal": 8222,
+    "pr_auc": 0.9988831193342178,
+    "roc_auc": 0.9990829894543788,
+    "fit_seconds": 14.83,
+    "infer_us_per_flow": 1.69,
+    "fpr0.001": {
+      "threshold": 0.009343238866543598,
+      "tp": 743,
+      "fp": 2,
+      "fn": 7479,
+      "tn": 2179,
+      "precision": 0.9973154362416108,
+      "recall": 0.09036730722451958,
+      "f1": 0.1657187465149994,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.08435975672054971,
+        0.09675746780757635
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 0.09036730722451958,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.003138017584846562,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "r_fin": 22.12,
+      "r_rst": 21.02,
+      "proto": 10.73,
+      "r_syn": 10.11,
+      "r_psh": 8.07,
+      "resp_p": 5.74,
+      "first1_signed_size": 4.33,
+      "o_rst": 4.02,
+      "o_first_payload_len": 3.36,
+      "o_syn": 2.84
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-20-1",
+    "variant": "C_minus_payload_stats",
+    "seed": 0,
+    "n_features": 69,
+    "n_fit": 23483,
+    "n_cal_benign": 815,
+    "n_test": 3209,
+    "n_test_benign": 3193,
+    "n_test_mal": 16,
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "fit_seconds": 15.53,
+    "infer_us_per_flow": 2.27,
+    "fpr0.001": {
+      "threshold": 0.03461705558152731,
+      "tp": 16,
+      "fp": 2,
+      "fn": 0,
+      "tn": 3191,
+      "precision": 0.8888888888888888,
+      "recall": 1.0,
+      "f1": 0.9411764705882353,
+      "fpr": 0.0006263701847792045,
+      "fpr_ci": [
+        0.0001717865103714909,
+        0.002281134522688139
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 4,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.004281713768190676,
+      "tp": 16,
+      "fp": 238,
+      "fn": 0,
+      "tn": 2955,
+      "precision": 0.06299212598425197,
+      "recall": 1.0,
+      "f1": 0.11851851851851852,
+      "fpr": 0.07453805198872533,
+      "fpr_ci": [
+        0.06593031803517013,
+        0.08416832932977905
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 25,
+      "false_incidents": 23,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "resp_p": 16.06,
+      "r_syn": 14.97,
+      "o_ack": 12.02,
+      "o_syn": 10.88,
+      "o_rst": 9.58,
+      "o_urg": 5.87,
+      "o_size_p90": 4.42,
+      "o_fin": 3.28,
+      "o_size_med": 3.18,
+      "r_fin": 2.93
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-34-1",
+    "variant": "C_minus_payload_stats",
+    "seed": 0,
+    "n_features": 69,
+    "n_fit": 9528,
+    "n_cal_benign": 1608,
+    "n_test": 23145,
+    "n_test_benign": 1923,
+    "n_test_mal": 21222,
+    "pr_auc": 0.9913970504493071,
+    "roc_auc": 0.9529239420448554,
+    "fit_seconds": 11.7,
+    "infer_us_per_flow": 1.65,
+    "fpr0.001": {
+      "threshold": 0.009263750210417138,
+      "tp": 21220,
+      "fp": 119,
+      "fn": 2,
+      "tn": 1804,
+      "precision": 0.9944233562959839,
+      "recall": 0.9999057581754783,
+      "f1": 0.9971570216865207,
+      "fpr": 0.06188247529901196,
+      "fpr_ci": [
+        0.05196221473500007,
+        0.07354971110259861
+      ],
+      "recall_ci": [
+        0.9996564078766573,
+        0.9999741556530358
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 0.9999305266083091,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.001_excl_zero_pkt_records": {
+      "threshold": 0.009263750210417138,
+      "tp": 6960,
+      "fp": 119,
+      "fn": 2,
+      "tn": 1804,
+      "precision": 0.9831897160615907,
+      "recall": 0.9997127262280954,
+      "f1": 0.9913823801723525,
+      "fpr": 0.06188247529901196,
+      "fpr_ci": [
+        0.05196221473500007,
+        0.07354971110259861
+      ],
+      "recall_ci": [
+        0.9989530608794508,
+        0.9999212172838656
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 0.9925373134328358,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9813312645525134
+    },
+    "fpr0.01": {
+      "threshold": 0.006703665716983848,
+      "tp": 21220,
+      "fp": 145,
+      "fn": 2,
+      "tn": 1778,
+      "precision": 0.9932131991575006,
+      "recall": 0.9999057581754783,
+      "f1": 0.9965482424213962,
+      "fpr": 0.07540301612064483,
+      "fpr_ci": [
+        0.06442947042084948,
+        0.08806962447101915
+      ],
+      "recall_ci": [
+        0.9996564078766573,
+        0.9999741556530358
+      ],
+      "incidents": 9,
+      "false_incidents": 4,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 0.9999305266083091,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 0.04198473282442748
+    },
+    "fpr0.01_excl_zero_pkt_records": {
+      "threshold": 0.006703665716983848,
+      "tp": 6960,
+      "fp": 145,
+      "fn": 2,
+      "tn": 1778,
+      "precision": 0.9795918367346939,
+      "recall": 0.9997127262280954,
+      "f1": 0.9895500106632544,
+      "fpr": 0.07540301612064483,
+      "fpr_ci": [
+        0.06442947042084948,
+        0.08806962447101915
+      ],
+      "recall_ci": [
+        0.9989530608794508,
+        0.9999212172838656
+      ],
+      "incidents": 9,
+      "false_incidents": 4,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 0.9925373134328358,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 0.9918032786885246,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9813312645525134
+    },
+    "top_features": {
+      "r_psh": 19.47,
+      "o_ack": 14.29,
+      "r_urg": 13.94,
+      "r_ack": 13.64,
+      "o_size_mean": 12.92,
+      "proto": 9.62,
+      "r_fin": 3.95,
+      "o_psh": 3.86,
+      "o_urg": 2.32,
+      "first1_signed_size": 2.21
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-8-1",
+    "variant": "C_minus_payload_stats",
+    "seed": 0,
+    "n_features": 69,
+    "n_fit": 18447,
+    "n_cal_benign": 1133,
+    "n_test": 10403,
+    "n_test_benign": 2181,
+    "n_test_mal": 8222,
+    "pr_auc": 0.9998176217929121,
+    "roc_auc": 0.999312297856446,
+    "fit_seconds": 14.55,
+    "infer_us_per_flow": 2.01,
+    "fpr0.001": {
+      "threshold": 0.003744553332475706,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.003744553332475706,
+      "tp": 8222,
+      "fp": 2,
+      "fn": 0,
+      "tn": 2179,
+      "precision": 0.9997568093385214,
+      "recall": 1.0,
+      "f1": 0.9998783898820381,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.9995329839563163,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "o_psh": 39.3,
+      "r_psh": 16.05,
+      "r_syn": 11.25,
+      "o_rst": 8.88,
+      "resp_p": 6.03,
+      "o_ack": 4.8,
+      "o_syn": 3.11,
+      "o_fin": 2.54,
+      "o_size_max": 2.24,
+      "proto": 1.78
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-20-1",
+    "variant": "C_minus_zeek_service",
+    "seed": 0,
+    "n_features": 74,
+    "n_fit": 23483,
+    "n_cal_benign": 815,
+    "n_test": 3209,
+    "n_test_benign": 3193,
+    "n_test_mal": 16,
+    "pr_auc": 1.0,
+    "roc_auc": 1.0,
+    "fit_seconds": 15.09,
+    "infer_us_per_flow": 1.75,
+    "fpr0.001": {
+      "threshold": 0.0896194878742917,
+      "tp": 16,
+      "fp": 1,
+      "fn": 0,
+      "tn": 3192,
+      "precision": 0.9411764705882353,
+      "recall": 1.0,
+      "f1": 0.9696969696969697,
+      "fpr": 0.00031318509238960227,
+      "fpr_ci": [
+        5.528557631306744e-05,
+        0.0017720179722894034
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 3,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.0012098337011356545,
+      "tp": 16,
+      "fp": 633,
+      "fn": 0,
+      "tn": 2560,
+      "precision": 0.02465331278890601,
+      "recall": 1.0,
+      "f1": 0.0481203007518797,
+      "fpr": 0.19824616348261823,
+      "fpr_ci": [
+        0.18478369003235262,
+        0.21243386369317452
+      ],
+      "recall_ci": [
+        0.8063865817272802,
+        1.0
+      ],
+      "incidents": 25,
+      "false_incidents": 23,
+      "per_family": {
+        "C&C-Torii": {
+          "n": 16,
+          "recall": 1.0,
+          "n_destinations": 1
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "r_rst": 18.37,
+      "o_urg": 17.09,
+      "resp_p": 16.01,
+      "o_psh": 9.1,
+      "o_payload_pkt_frac": 5.85,
+      "o_size_min": 4.98,
+      "o_first_payload_entropy": 4.33,
+      "o_size_max": 4.12,
+      "o_fin": 3.88,
+      "orig_ip_bytes": 2.54
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-34-1",
+    "variant": "C_minus_zeek_service",
+    "seed": 0,
+    "n_features": 74,
+    "n_fit": 9528,
+    "n_cal_benign": 1608,
+    "n_test": 23145,
+    "n_test_benign": 1923,
+    "n_test_mal": 21222,
+    "pr_auc": 0.9845187628094851,
+    "roc_auc": 0.9453748680528693,
+    "fit_seconds": 12.22,
+    "infer_us_per_flow": 1.4,
+    "fpr0.001": {
+      "threshold": 0.008732441190953533,
+      "tp": 21222,
+      "fp": 117,
+      "fn": 0,
+      "tn": 1806,
+      "precision": 0.9945170814002531,
+      "recall": 1.0,
+      "f1": 0.9972510044406852,
+      "fpr": 0.060842433697347896,
+      "fpr_ci": [
+        0.051008674493707246,
+        0.07242731526279375
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.001_excl_zero_pkt_records": {
+      "threshold": 0.008732441190953533,
+      "tp": 6962,
+      "fp": 117,
+      "fn": 0,
+      "tn": 1806,
+      "precision": 0.983472241842068,
+      "recall": 1.0,
+      "f1": 0.9916672601666547,
+      "fpr": 0.060842433697347896,
+      "fpr_ci": [
+        0.051008674493707246,
+        0.07242731526279375
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9634685924969885
+    },
+    "fpr0.01": {
+      "threshold": 0.007924226561963857,
+      "tp": 21222,
+      "fp": 140,
+      "fn": 0,
+      "tn": 1783,
+      "precision": 0.9934463065256062,
+      "recall": 1.0,
+      "f1": 0.9967123802367085,
+      "fpr": 0.07280291211648465,
+      "fpr_ci": [
+        0.062022456147381486,
+        0.08528679854174291
+      ],
+      "recall_ci": [
+        0.9998190130656586,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 14394,
+          "recall": 1.0,
+          "n_destinations": 3
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 0.0
+    },
+    "fpr0.01_excl_zero_pkt_records": {
+      "threshold": 0.007924226561963857,
+      "tp": 6962,
+      "fp": 140,
+      "fn": 0,
+      "tn": 1783,
+      "precision": 0.9802872430301324,
+      "recall": 1.0,
+      "f1": 0.9900455062571104,
+      "fpr": 0.07280291211648465,
+      "fpr_ci": [
+        0.062022456147381486,
+        0.08528679854174291
+      ],
+      "recall_ci": [
+        0.9994485088492395,
+        1.0
+      ],
+      "incidents": 6,
+      "false_incidents": 1,
+      "per_family": {
+        "C&C": {
+          "n": 6706,
+          "recall": 1.0,
+          "n_destinations": 1
+        },
+        "DDoS": {
+          "n": 134,
+          "recall": 1.0,
+          "n_destinations": 2
+        },
+        "PartOfAHorizontalPortScan": {
+          "n": 122,
+          "recall": 1.0,
+          "n_destinations": 2
+        }
+      },
+      "n_excluded": 14260,
+      "pr_auc": 0.9634685924969885
+    },
+    "top_features": {
+      "o_size_max": 39.26,
+      "first1_signed_size": 15.36,
+      "o_ack": 12.95,
+      "r_ack": 7.37,
+      "o_payload_pkt_frac": 7.31,
+      "o_syn": 4.99,
+      "o_size_min": 3.7,
+      "r_rst": 1.92,
+      "r_payload_pkt_frac": 1.37,
+      "o_urg": 0.63
+    }
+  },
+  {
+    "test_capture": "CTU-IoT-Malware-Capture-8-1",
+    "variant": "C_minus_zeek_service",
+    "seed": 0,
+    "n_features": 74,
+    "n_fit": 18447,
+    "n_cal_benign": 1133,
+    "n_test": 10403,
+    "n_test_benign": 2181,
+    "n_test_mal": 8222,
+    "pr_auc": 0.9994716531544015,
+    "roc_auc": 0.9990829894543787,
+    "fit_seconds": 14.39,
+    "infer_us_per_flow": 1.68,
+    "fpr0.001": {
+      "threshold": 0.014923838956393978,
+      "tp": 1284,
+      "fp": 2,
+      "fn": 6938,
+      "tn": 2179,
+      "precision": 0.9984447900466563,
+      "recall": 0.15616638287521284,
+      "f1": 0.27008834665544806,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.14848040326635456,
+        0.16417351411518114
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 0.15616638287521284,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "INSUFFICIENT SUPPORT",
+        "test": "INSUFFICIENT SUPPORT"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "fpr0.01": {
+      "threshold": 0.010462502740250757,
+      "tp": 2056,
+      "fp": 2,
+      "fn": 6166,
+      "tn": 2179,
+      "precision": 0.9990281827016521,
+      "recall": 0.25006081245439066,
+      "f1": 0.4,
+      "fpr": 0.0009170105456212746,
+      "fpr_ci": [
+        0.00025150813310592136,
+        0.003337585007559288
+      ],
+      "recall_ci": [
+        0.240818407147593,
+        0.2595366689822463
+      ],
+      "incidents": 3,
+      "false_incidents": 2,
+      "per_family": {
+        "C&C": {
+          "n": 8222,
+          "recall": 0.25006081245439066,
+          "n_destinations": 2
+        }
+      },
+      "support": {
+        "calibration": "OK",
+        "test": "OK"
+      },
+      "oracle_recall_at_test_fpr": 1.0
+    },
+    "top_features": {
+      "r_urg": 22.43,
+      "o_urg": 14.69,
+      "r_fin": 9.23,
+      "o_rst": 8.61,
+      "resp_p": 7.66,
+      "r_rst": 6.98,
+      "proto": 6.79,
+      "o_ack": 5.47,
+      "r_psh": 4.42,
+      "o_payload_pkt_frac": 4.08
+    }
+  }
+]

@@ -1,0 +1,6 @@
+entries 448 central dir bytes 56908
+files parsed 447 bytes fetched for listing 122500
+smallest 5: [(0.56, 'pcap/UCAP172.31.69.18'), (0.6, 'pcap/UCAP172.31.69.15'), (6.78, 'pcap/capWIN-J6GMIG1DQE5-172.31.64.86'), (8.36, 'pcap/capWIN-J6GMIG1DQE5-172.31.67.30'), (8.97, 'pcap/capWIN-J6GMIG1DQE5-172.31.65.125')]
+largest 3: [(557.0, 'pcap/capPC1-172.31.66.79'), (563.1, 'pcap/capPC1-172.31.64.121'), (648.7, 'pcap/capPC1-172.31.64.116')]
+files by host dir (top): [('pcap', 447)]
+web server 172.31.69.28 pcaps: 1 total MB 9.5 [(9.5, 'pcap/UCAP172.31.69.28')]

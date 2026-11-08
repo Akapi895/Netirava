@@ -1,0 +1,124 @@
+{
+  "support_train": {
+    "C&C": 9406,
+    "DDoS": 7503,
+    "Benign": 5006,
+    "PartOfAHorizontalPortScan": 122,
+    "C&C-Torii": 16
+  },
+  "support_test": {
+    "DDoS": 6891,
+    "C&C": 5522,
+    "Benign": 2291
+  },
+  "scored_classes": [
+    "C&C",
+    "DDoS",
+    "Benign"
+  ],
+  "not_scored": [
+    "PartOfAHorizontalPortScan",
+    "C&C-Torii"
+  ],
+  "runs": [
+    {
+      "set": "A",
+      "seed": 0,
+      "macro_f1": 0.9872559338375989,
+      "per_class_f1": {
+        "C&C": 1.0,
+        "DDoS": 0.9901817116060961,
+        "Benign": 0.9715860899067006
+      },
+      "benign_fpr": 0.0
+    },
+    {
+      "set": "A",
+      "seed": 1,
+      "macro_f1": 0.9872559338375989,
+      "per_class_f1": {
+        "C&C": 1.0,
+        "DDoS": 0.9901817116060961,
+        "Benign": 0.9715860899067006
+      },
+      "benign_fpr": 0.0
+    },
+    {
+      "set": "A",
+      "seed": 2,
+      "macro_f1": 0.9872559338375989,
+      "per_class_f1": {
+        "C&C": 1.0,
+        "DDoS": 0.9901817116060961,
+        "Benign": 0.9715860899067006
+      },
+      "benign_fpr": 0.0
+    },
+    {
+      "set": "B",
+      "seed": 0,
+      "macro_f1": 0.9872504103973115,
+      "per_class_f1": {
+        "C&C": 0.99990944489722,
+        "DDoS": 0.9902556963880138,
+        "Benign": 0.9715860899067006
+      },
+      "benign_fpr": 0.0
+    },
+    {
+      "set": "B",
+      "seed": 1,
+      "macro_f1": 0.9871570903276194,
+      "per_class_f1": {
+        "C&C": 0.99990944489722,
+        "DDoS": 0.9901817116060961,
+        "Benign": 0.9713801144795421
+      },
+      "benign_fpr": 0.0
+    },
+    {
+      "set": "B",
+      "seed": 2,
+      "macro_f1": 0.9872504103973115,
+      "per_class_f1": {
+        "C&C": 0.99990944489722,
+        "DDoS": 0.9902556963880138,
+        "Benign": 0.9715860899067006
+      },
+      "benign_fpr": 0.0
+    },
+    {
+      "set": "C",
+      "seed": 0,
+      "macro_f1": 0.9872559338375989,
+      "per_class_f1": {
+        "C&C": 1.0,
+        "DDoS": 0.9901817116060961,
+        "Benign": 0.9715860899067006
+      },
+      "benign_fpr": 0.0
+    },
+    {
+      "set": "C",
+      "seed": 1,
+      "macro_f1": 0.9872559338375989,
+      "per_class_f1": {
+        "C&C": 1.0,
+        "DDoS": 0.9901817116060961,
+        "Benign": 0.9715860899067006
+      },
+      "benign_fpr": 0.0
+    },
+    {
+      "set": "C",
+      "seed": 2,
+      "macro_f1": 0.9872559338375989,
+      "per_class_f1": {
+        "C&C": 1.0,
+        "DDoS": 0.9901817116060961,
+        "Benign": 0.9715860899067006
+      },
+      "benign_fpr": 0.0
+    }
+  ]
+}

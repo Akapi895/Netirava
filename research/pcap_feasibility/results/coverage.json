@@ -1,0 +1,247 @@
+{
+  "flows": 36757,
+  "per_capture": {
+    "CTU-IoT-Malware-Capture-20-1": {
+      "flows": 3209,
+      "labels": {
+        "Benign": 3193,
+        "C&C-Torii": 16
+      },
+      "proto": {
+        "udp": 3192,
+        "tcp": 17
+      },
+      "zero_packet_zeek_records": 0,
+      "distinct_destinations_by_label": {
+        "Benign": 40,
+        "C&C-Torii": 1
+      }
+    },
+    "CTU-IoT-Malware-Capture-34-1": {
+      "flows": 23145,
+      "labels": {
+        "DDoS": 14394,
+        "C&C": 6706,
+        "Benign": 1923,
+        "PartOfAHorizontalPortScan": 122
+      },
+      "proto": {
+        "tcp": 21331,
+        "udp": 1814
+      },
+      "zero_packet_zeek_records": 14260,
+      "distinct_destinations_by_label": {
+        "Benign": 46,
+        "C&C": 1,
+        "DDoS": 3,
+        "PartOfAHorizontalPortScan": 2
+      }
+    },
+    "CTU-IoT-Malware-Capture-8-1": {
+      "flows": 10403,
+      "labels": {
+        "C&C": 8222,
+        "Benign": 2181
+      },
+      "proto": {
+        "tcp": 8224,
+        "udp": 2179
+      },
+      "zero_packet_zeek_records": 0,
+      "distinct_destinations_by_label": {
+        "Benign": 7,
+        "C&C": 2
+      }
+    }
+  },
+  "groups": {
+    "pkt_size_dist": {
+      "columns": 12,
+      "coverage": 1.0,
+      "coverage_by_label": {
+        "Benign": 1.0,
+        "C&C": 1.0,
+        "C&C-Torii": 1.0,
+        "DDoS": 1.0,
+        "PartOfAHorizontalPortScan": 1.0
+      }
+    },
+    "timing": {
+      "columns": 13,
+      "coverage": 0.32295889218380175,
+      "coverage_by_label": {
+        "Benign": 0.7511,
+        "C&C": 0.4254,
+        "C&C-Torii": 0.5,
+        "DDoS": 0.0015,
+        "PartOfAHorizontalPortScan": 0.0902
+      }
+    },
+    "tcp_flags": {
+      "columns": 12,
+      "coverage": 0.8045270288652502,
+      "coverage_by_label": {
+        "Benign": 0.0156,
+        "C&C": 1.0,
+        "C&C-Torii": 1.0,
+        "DDoS": 0.9999,
+        "PartOfAHorizontalPortScan": 0.9918
+      }
+    },
+    "first_n_sizes": {
+      "columns": 5,
+      "coverage": 1.0,
+      "coverage_by_label": {
+        "Benign": 1.0,
+        "C&C": 1.0,
+        "C&C-Torii": 1.0,
+        "DDoS": 1.0,
+        "PartOfAHorizontalPortScan": 1.0
+      }
+    },
+    "dns_meta": {
+      "columns": 8,
+      "coverage": 0.02132927061512093,
+      "coverage_by_label": {
+        "Benign": 0.1074,
+        "C&C": 0.0,
+        "C&C-Torii": 0.0,
+        "DDoS": 0.0,
+        "PartOfAHorizontalPortScan": 0.0
+      }
+    },
+    "http_meta": {
+      "columns": 7,
+      "coverage": 0.0003264684277824632,
+      "coverage_by_label": {
+        "Benign": 0.0016,
+        "C&C": 0.0,
+        "C&C-Torii": 0.0,
+        "DDoS": 0.0,
+        "PartOfAHorizontalPortScan": 0.0
+      }
+    },
+    "tls_meta": {
+      "columns": 0,
+      "coverage": 0.0,
+      "note": "no flow carried this protocol"
+    },
+    "ssh_meta": {
+      "columns": 0,
+      "coverage": 0.0,
+      "note": "no flow carried this protocol"
+    },
+    "payload_stats": {
+      "columns": 6,
+      "coverage": 1.0,
+      "coverage_by_label": {
+        "Benign": 1.0,
+        "C&C": 1.0,
+        "C&C-Torii": 1.0,
+        "DDoS": 1.0,
+        "PartOfAHorizontalPortScan": 1.0
+      }
+    },
+    "zeek_service": {
+      "columns": 1,
+      "coverage": 0.06635470794678565,
+      "coverage_by_label": {
+        "Benign": 0.1094,
+        "C&C": 0.1099,
+        "C&C-Torii": 0.0,
+        "DDoS": 0.0,
+        "PartOfAHorizontalPortScan": 0.0
+      }
+    }
+  },
+  "missing_by_column": {
+    "duration": 0.6773,
+    "orig_bytes": 0.6773,
+    "resp_bytes": 0.6773,
+    "missed_bytes": 0.0,
+    "orig_pkts": 0.0,
+    "orig_ip_bytes": 0.0,
+    "resp_pkts": 0.0,
+    "resp_ip_bytes": 0.0,
+    "resp_p": 0.0,
+    "proto": 0.0,
+    "conn_state": 0.0,
+    "o_size_mean": 0.0001,
+    "o_size_std": 0.0001,
+    "o_size_min": 0.0001,
+    "o_size_max": 0.0001,
+    "o_size_med": 0.0001,
+    "o_size_p90": 0.0001,
+    "r_size_mean": 0.8153,
+    "r_size_std": 0.8153,
+    "r_size_min": 0.8153,
+    "r_size_max": 0.8153,
+    "r_size_med": 0.8153,
+    "r_size_p90": 0.8153,
+    "o_iat_mean": 0.8133,
+    "o_iat_std": 0.8133,
+    "o_iat_min": 0.8133,
+    "o_iat_max": 0.8133,
+    "o_iat_med": 0.8133,
+    "o_iat_p90": 0.8133,
+    "r_iat_mean": 0.9528,
+    "r_iat_std": 0.9528,
+    "r_iat_min": 0.9528,
+    "r_iat_max": 0.9528,
+    "r_iat_med": 0.9528,
+    "r_iat_p90": 0.9528,
+    "first_resp_delay": 0.8154,
+    "o_syn": 0.1955,
+    "o_fin": 0.1955,
+    "o_rst": 0.1955,
+    "o_psh": 0.1955,
+    "o_ack": 0.1955,
+    "o_urg": 0.1955,
+    "r_syn": 0.1955,
+    "r_fin": 0.1955,
+    "r_rst": 0.1955,
+    "r_psh": 0.1955,
+    "r_ack": 0.1955,
+    "r_urg": 0.1955,
+    "first1_signed_size": 0.0,
+    "first2_signed_size": 0.677,
+    "first3_signed_size": 0.8219,
+    "first4_signed_size": 0.9516,
+    "first5_signed_size": 0.952,
+    "dns_qtype": 0.9787,
+    "dns_qname_len": 0.9787,
+    "dns_qname_labels": 0.9787,
+    "dns_qname_entropy": 0.9787,
+    "dns_qname_digit_frac": 0.9787,
+    "dns_rcode": 0.9893,
+    "dns_ancount": 0.9893,
+    "dns_min_ttl": 0.9978,
+    "http_method": 0.9997,
+    "http_uri_len": 0.9997,
+    "http_n_headers": 0.9997,
+    "http_has_ua": 0.9997,
+    "http_ua_len": 0.9997,
+    "http_host_is_ip": 0.9997,
+    "http_status": 0.9999,
+    "o_payload_pkt_frac": 0.0001,
+    "o_first_payload_len": 0.0,
+    "o_first_payload_entropy": 0.3715,
+    "r_payload_pkt_frac": 0.8153,
+    "r_first_payload_len": 0.0,
+    "r_first_payload_entropy": 0.8154,
+    "zeek_service": 0.9336
+  },
+  "share": {
+    "encrypted_tls_ssh": 0.0,
+    "with_protocol_metadata": 0.021655739042903393,
+    "no_metadata": 0.9783442609570966,
+    "no_payload_either_direction": 0.3714122480071823,
+    "no_metadata_by_label": {
+      "Benign": 0.8909,
+      "C&C": 1.0,
+      "C&C-Torii": 1.0,
+      "DDoS": 1.0,
+      "PartOfAHorizontalPortScan": 1.0
+    }
+  }
+}

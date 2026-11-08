@@ -1,0 +1,65 @@
+{
+  "nf_flows_touching_host": 3212,
+  "labels": {
+    "Brute_Force_-Web": 1618,
+    "Benign": 674,
+    "Brute_Force_-XSS": 480,
+    "SQL_Injection": 440
+  },
+  "nf_time_range_utc": [
+    "2018-02-22 12:24:51.637000084",
+    "2018-02-22 21:29:42.168999910"
+  ],
+  "offset_scan_match_rate": {
+    "-5": 0.169,
+    "-4": 0.21266666666666667,
+    "-3": 0.25533333333333336,
+    "-2": 0.29633333333333334,
+    "-1": 0.3403333333333333,
+    "0": 0.8663333333333333,
+    "1": 0.3406666666666667,
+    "2": 0.2986666666666667,
+    "3": 0.25833333333333336,
+    "4": 0.21566666666666667,
+    "5": 0.172
+  },
+  "best_offset_h": 0,
+  "pcap_stats": {
+    "packets": 47715,
+    "assigned": 44224,
+    "non_ipv4": 3490,
+    "ambiguous_packets": 14540,
+    "undecodable": 1,
+    "parse_seconds": 0.65
+  },
+  "join_rate": 0.8567870485678705,
+  "flows_ambiguous": 460,
+  "pkt_count_ratio_pcap_over_nf": {
+    "median": 1.0,
+    "p10": 1.0,
+    "p90": 1.0,
+    "exact_share": 1.0
+  },
+  "join_rate_by_label": {
+    "Benign": {
+      "mean": 1.0,
+      "size": 674
+    },
+    "Brute_Force_-Web": {
+      "mean": 1.0,
+      "size": 1618
+    },
+    "Brute_Force_-XSS": {
+      "mean": 0.0417,
+      "size": 480
+    },
+    "SQL_Injection": {
+      "mean": 1.0,
+      "size": 440
+    }
+  },
+  "join_rate_by_segment": {
+    "K5_0222_web_tail": 0.8455,
+    "T5_0222_web_head": 0.8679
+  }
+}
