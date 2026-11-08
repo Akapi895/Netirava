@@ -14,7 +14,7 @@ def _print(obj):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="netirava")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report", "relabel", "pilot-train", "pilot-eval", "registry"):
+    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report", "relabel", "pilot-train", "pilot-eval", "registry", "eda", "fe-study", "fe-final"):
         p = sub.add_parser(name)
         p.add_argument("--config", default="configs/demo.yaml")
         if name == "train-a0":
@@ -100,6 +100,16 @@ def main(argv=None):
         from netirava.pilot import evaluate_pilot
         r = evaluate_pilot(cfg)
         _print({"eval_rows": r["eval_rows"], "support": r["support"]})
+    elif a.cmd == "eda":
+        from netirava.eda import run
+        r = run(cfg)
+        _print({k: r[k] for k in ("rows_non_holdout", "study_role_counts", "near_constant_features", "consistency")})
+    elif a.cmd == "fe-study":
+        from netirava.fstudy import run_study
+        _print(run_study(cfg))
+    elif a.cmd == "fe-final":
+        from netirava.fstudy import run_final
+        _print(run_final(cfg))
     elif a.cmd == "relabel":
         from netirava.relabel import build
         _print(build(cfg))
