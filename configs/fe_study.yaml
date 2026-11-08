@@ -1,0 +1,210 @@
+# Feature-engineering study config (pre-registered 2026-11-08, before prepare / any feature or score was read).
+# Derived from configs/demo.yaml. H1/H2 (consumed holdouts) are NOT part of this study.
+# New holdouts chosen from hourly support only (runs/inspect/hourly_class_counts.csv):
+#   H3: untouched benign-only day 02-23 (FPR / false incidents on a new day)
+#   H4: 02-21 14:00-15:00, DDoS LOIC-UDP (3,450 flows) + benign, before HOIC (18:00): unseen family
+dataset:
+  name: NF-CSE-CIC-IDS2018-v3
+  sha1: ddcad6d826b73a128a447a0189137efd6c8f70c9
+  subset_name: CIC18-FE-Study-v1
+  max_rows: 3400000
+paths:
+  raw_csv: datasets/NF-CSE-CIC-IDS2018-v3/f78acbaa2afe1595_NFV3DATA-A11964_A11964/data/NF-CICIDS2018-v3.csv
+  derived: artifacts/fe_study_v1
+  models: artifacts/fe_study_v1/models
+  runs: runs/fe_study
+windows:
+- id: T1_0214_ftp_head
+  role: train
+  start_utc: 2018-02-14 14:25
+  end_utc: 2018-02-14 15:05
+  scenario: known-train
+- id: K1_0214_ftp_tail
+  role: known_replay
+  start_utc: 2018-02-14 15:50
+  end_utc: 2018-02-14 16:20
+  scenario: known-within-episode
+- id: T2_0214_ssh_head
+  role: train
+  start_utc: 2018-02-14 17:55
+  end_utc: 2018-02-14 18:50
+  scenario: known-train
+- id: K2_0214_ssh_tail
+  role: known_replay
+  start_utc: 2018-02-14 19:05
+  end_utc: 2018-02-14 19:40
+  scenario: known-within-episode
+- id: T3_0215_gold_head
+  role: train
+  start_utc: 2018-02-15 13:20
+  end_utc: 2018-02-15 13:55
+  scenario: known-train
+- id: K3_0215_gold_tail
+  role: known_replay
+  start_utc: 2018-02-15 13:55
+  end_utc: 2018-02-15 14:20
+  scenario: known-within-episode
+- id: T4_0215_slow_head
+  role: train
+  start_utc: 2018-02-15 14:55
+  end_utc: 2018-02-15 15:25
+  scenario: known-train
+- id: K4_0215_slow_tail
+  role: known_replay
+  start_utc: 2018-02-15 15:25
+  end_utc: 2018-02-15 15:50
+  scenario: known-within-episode
+- id: C1_0220_benign
+  role: calibration
+  start_utc: 2018-02-20 12:00
+  end_utc: 2018-02-20 14:05
+  scenario: calibration
+- id: T5_0222_web_head
+  role: train
+  start_utc: 2018-02-22 12:00
+  end_utc: 2018-02-22 17:00
+  scenario: known-train
+  scope_hosts:
+  - 172.31.69.28
+  - 172.31.69.1
+- id: K5_0222_web_tail
+  role: known_replay
+  start_utc: 2018-02-22 17:00
+  end_utc: 2018-02-22 22:00
+  scenario: known-within-episode
+  scope_hosts:
+  - 172.31.69.28
+  - 172.31.69.1
+- id: S1_0228_infil
+  role: stress
+  start_utc: 2018-02-28 15:00
+  end_utc: 2018-02-28 15:40
+  scenario: stress-infiltration
+- id: R1_0302_bot
+  role: replay
+  start_utc: 2018-03-02 13:30
+  end_utc: 2018-03-02 17:30
+  scenario: unknown-bot
+- id: H3_0223_benign
+  role: holdout
+  start_utc: 2018-02-23 14:00
+  end_utc: 2018-02-23 15:00
+  scenario: holdout-new-day-fpr
+- id: H4_0221_loicudp
+  role: holdout
+  start_utc: 2018-02-21 14:00
+  end_utc: 2018-02-21 15:00
+  scenario: holdout-unknown-loic-udp
+labels:
+  flagged_classes:
+  - Infilteration
+  taxonomy:
+    Benign: Benign
+    FTP-BruteForce: BruteForce
+    SSH-Bruteforce: BruteForce
+    DoS_attacks-GoldenEye: DoS
+    DoS_attacks-Slowloris: DoS
+    Bot: Bot
+    Brute_Force_-Web: Web
+    Brute_Force_-XSS: Web
+    SQL_Injection: Web
+    Infilteration: Infiltration
+    DDoS_attacks-LOIC-HTTP: DDoS
+    DoS_attacks-Hulk: DoS
+a0:
+  known_classes:
+  - Benign
+  - FTP-BruteForce
+  - SSH-Bruteforce
+  - DoS_attacks-GoldenEye
+  - DoS_attacks-Slowloris
+  - Brute_Force_-Web
+  - Brute_Force_-XSS
+  - SQL_Injection
+  rare_classes:
+  - Brute_Force_-Web
+  - Brute_Force_-XSS
+  - SQL_Injection
+  reference_config: ../experiments/nextphase/configs.yaml
+  seed: 0
+  target_fpr: 0.001
+anomaly:
+  n_estimators: 100
+  max_samples: 256
+  contamination: auto
+  random_state: 0
+  n_jobs: 4
+  max_train_rows: 200000
+  transform: log1p_signed
+  target_fpr: 0.001
+replay:
+  export_delay_ms: 0
+  decision_tick_ms: 1000
+  chunk_events: 50000
+  default_speed: 60
+  shadow_deadline_ms_per_event: 1.0
+policy:
+  version: a0-policy-v1
+  entity: IPV4_SRC_ADDR
+  cooldown_ms: 900000
+  budget_per_hour: 30
+evaluation:
+  episode_gap_ms: 1800000
+family:
+  ambiguous:
+    Web:
+    - Brute_Force_-Web
+    - Brute_Force_-XSS
+    - SQL_Injection
+  tau: 0.8
+fe_study:
+  labels: truth_cns2022 (label_corrected); rows with status attempted/indeterminate excluded from train and selection; original labels reported
+    alongside
+  web_split: 'netirava.pilot.pilot_role (CNS2022 web windows: first 60% train, rest eval) - unchanged from the pilot'
+  inner_split:
+    segments: train-role segments T1-T4
+    fit_frac: 0.7
+    purge_ms: 300000
+    web: inner-train = pilot train rows of T5/K5; inner-val = pilot eval rows inside CNS web windows + K5 outside windows
+  seeds:
+  - 0
+  - 1
+  - 2
+  recipe: A0 (NP-v1 CatBoost, SMOTE < 1000 -> 1000, same params, cpu_auto_probe lr on GPU); no HPO
+  alpha: 0.001
+  fpr_levels:
+  - 0.001
+  - 0.01
+  dev_fp_segments:
+  - S1_0228_infil
+  - R1_0302_bot
+  metrics:
+    M1: macro-F1 over known classes on inner-val (corrected labels), mean over seeds; rare-class F1 with support + Wilson CI, INCONCLUSIVE if
+      n < 30
+    M2: benign FPR at the C1-locked alpha=0.1% threshold on dev_fp_segments (corrected labels, attempted/indeterminate excluded) + false incidents/hour
+      (src IP, 15 min cooldown)
+    M3: M1 restricted to inner-val rows whose 49-feature fingerprint does not occur in inner-train
+  groups:
+  - G0
+  - G_prep
+  - G_ratio
+  - G_flag
+  - G_shortcut_drop
+  - G_ctx
+  controls:
+  - permuted group (rows permuted jointly within each split)
+  - same number of N(0,1) noise columns
+  acceptance_rule:
+    add_group: accept if mean dM1 > 0 and dM1 > max(seed sd of both arms) AND mean M1 > permuted-control M1 AND M2 not worse than reference beyond
+      the Wilson 95% upper bound of the reference FPR AND not flagged by the shortcut probe
+    drop_shortcut: accept dropping a column/group if mean dM1 >= -0.01 AND (M2 improves OR adversarial-drift AUC decreases)
+    order: G_prep first (becomes reference if accepted); then G_shortcut_drop, G_ratio, G_flag, G_ctx each tested against the current reference;
+      accepted groups are combined in this order
+    shortcut_probe: flag a feature if a single-feature CatBoost (200 it) predicts the source host of attack rows in inner-train with macro-F1
+      >= 0.9 while its class-prediction macro-F1 < 0.5
+  final_go_rule:
+    comparators: G0 refit on the same final training set (corrected labels) = reference; A0 v2 and pilot_cns/s0 reported as frozen references
+    H3: benign FPR (alpha 0.1%) mean over seeds of v2 <= reference AND false incidents/hour of v2 <= reference
+    H4: 'LOIC-UDP recall at alpha 0.1% and 1%: v2 >= reference - 0.02 (non-inferiority)'
+    GO: H3 and H4 conditions both hold; otherwise NO-GO (keep the current pipeline)
+    holdout_runs: once, after the tag fe-v2-frozen
