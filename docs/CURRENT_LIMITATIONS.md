@@ -124,6 +124,19 @@ Netirava **không** claim phát hiện zero-day. Tấn công chưa thấy chỉ 
 | 9.4 | Chưa chạy trên traffic thật hay luồng streaming | Không có ingest nProbe hay Kafka; phản ứng chỉ là mô phỏng | `README.md` | — | Trung bình (đúng phạm vi datathon) |
 | 9.5 | Phụ thuộc thiết bị khi train | Train trên GPU kèm learning rate probe theo CPU; kết quả có thể lệch nhẹ giữa các thiết bị | `MODEL_CARD_A0_v2.md` | CM | Thấp |
 
+## 10. Cập nhật sau ops study (2026-11-08; số cũ ở trên giữ nguyên)
+| # | Hạn chế / thay đổi | Bằng chứng định lượng | Nguồn | Trạng thái | Mức độ |
+|---|---|---|---|---|---|
+| 10.1 | **L-4.4 đã sửa:** severity của incident lấy từ nhãn family-aware | Flow uncertain lấy severity của họ (Web = 4) | `family.flow_severity`, test | CM | — |
+| 10.2 | **L-6.5 đã sửa:** UI và export tách `notified` (budget FIFO) khỏi `queue_rank_*` | `incidents.csv` có cả hai cột | `triage.py` | CM | — |
+| 10.3 | **L-7.4 giảm một phần:** pilot có đánh giá độc lập đầu tiên | H5–H9: FPR 0.065% [0.060, 0.070]; HOIC recall 0.81. Lớp hiếm của pilot vẫn chỉ within-episode | `OPS_STUDY_RESULTS.md` §6 | CM (HO) | Cao → Trung bình |
+| 10.4 | **L-6.1/6.7: gom theo chiến dịch đã thử, NO-GO** | HOIC: episode phủ 0.80 → 1.00 và 46 → 5 mục/giờ, nhưng 6.9% (A0 v2) và 7.0% (pilot) incident chỉ-benign bị gộp vào campaign có tấn công (luật ≤ 5%) | `OPS_STUDY_RESULTS.md` §4 | CM (HO, kết quả âm) | Cao |
+| 10.5 | Pilot bỏ sót Infilteration trên ngày mới | H6: recall 0.012 (A0 v2: 0.194); nhãn lớp này bị flag | §6 | CM (HO) | Trung bình |
+| 10.6 | Pilot có FPR cao hơn A0 v2 ở α = 0.5% trên ngày benign | 0.51–0.59% so với 0.23–0.44% | §6 | CM (HO) | Trung bình |
+| 10.7 | **L-9.3: drift monitor đã có nhưng chưa kiểm chứng được recall** | Chỉ 1–3 cửa sổ có FPR > 2α trên DEV + HO; TR theo FPR với pilot (ρ 0.56 [0.32, 0.73]), không với A0 v2 (ρ 0.32); α·TR sai số trung vị 0.3–0.6 bậc log10 | §5 | TĐ (INCONCLUSIVE) | Trung bình |
+| 10.8 | Một holdout nhiều nguồn duy nhất | H5 HOIC, 10 attacker, một đích | §7 | CM | Trung bình |
+| 10.9 | Holdout H5–H9 nay đã dùng | Không chạy lại với phương pháp mới | `OPS_STUDY_PREREG.md` | CM | — |
+
 ## Kết quả âm được giữ làm bằng chứng
 - GraphIDS: NO-GO.
 - V4a: không có lợi trên dev.
@@ -133,3 +146,4 @@ Netirava **không** claim phát hiện zero-day. Tấn công chưa thấy chỉ 
 - A0 v2: XSS F1 = 0 trên nhãn đã sửa.
 - RQ-PCAP: NO-GO trên IoT-23.
 - Pilot làm tăng số incident báo nhầm mỗi giờ trên R1 và known.
+- Ops study: campaign correlation NO-GO (contamination 5–7%); campaign "open-once" (bản pre-register) che một SQLi thật trên DEV; drift monitor INCONCLUSIVE.

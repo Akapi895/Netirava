@@ -10,6 +10,12 @@
 
 Replay hoặc evaluation trên các segment **không phải holdout** bằng model đã có thì được phép.
 
+## Trạng thái (cập nhật 2026-11-08, ops study)
+- **D1 chốt:** pilot `pilot_cns/s0` theo luật RQ-M khai báo trước (`OPS_STUDY_PREREG.md` §5), áp trên holdout mới H5–H9 (`OPS_STUDY_RESULTS.md` §6). `final_system.model_dir` trong `configs/demo.yaml`; `replay` mặc định dùng model này.
+- **D2:** báo cả hai bộ nhãn (mọi bảng ops study). **D3:** α = 0.1%. **D4:** giữ severity (nay family-aware). **D5:** shadow tắt trong demo (`replay --mode a0`).
+- **Xong:** P1.1 (severity family-aware), P1.2 (`notified` và `queue_rank_*`), P1.3 (`severity_source`), P3.1 (AppTest UI + smoke e2e), P3.3 (ghi chú provenance của feedback trên UI).
+- **Mới:** campaign correlation (experimental view, NO-GO) và drift monitor (chỉ báo). Ràng buộc "không gom theo chiến dịch" ở cuối tài liệu này đã được người dùng mở lại cho ops study.
+
 ## P0: Quyết định cần người dùng chốt (chặn P1–P2)
 | # | Quyết định | Phương án | Đề xuất | Lý do và cái giá |
 |---|---|---|---|---|

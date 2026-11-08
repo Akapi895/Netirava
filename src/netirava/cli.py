@@ -28,7 +28,7 @@ def main(argv=None):
     p.add_argument("--segments", nargs="*", default=None)
     p.add_argument("--max-events", type=int, default=None)
     p.add_argument("--unlock-holdout", action="store_true", help="include the final holdout (only after the method is frozen)")
-    p.add_argument("--model", default="a0", help="model dir under artifacts/models, e.g. a0 (default) or pilot_cns/s0")
+    p.add_argument("--model", default=None, help="model dir under artifacts/models (default: final_system.model_dir, else a0)")
     p = sub.add_parser("decide")
     p.add_argument("--run", required=True)
     p.add_argument("--select", action="store_true", help="choose V4 (W, rho) on development scenarios")
@@ -70,6 +70,10 @@ def main(argv=None):
     p.add_argument("--tag", required=True)
     p.add_argument("--labels", default="original", choices=["original", "corrected"])
     p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("ops-pool", help="RQ-D on the pooled monitor windows of several ops-study tags")
+    p.add_argument("--tags", nargs="+", required=True)
+    p.add_argument("--out", required=True)
+    p.add_argument("--config", default="configs/demo.yaml")
     p = sub.add_parser("ui")
     p.add_argument("--run", required=True)
     p.add_argument("--port", default="8501")
@@ -100,7 +104,7 @@ def main(argv=None):
     elif a.cmd == "replay":
         from netirava.replay import run
         _print(run(cfg, mode=a.mode, pace=a.pace, speed=a.speed, segments=a.segments, max_events=a.max_events,
-                   unlock_holdout=a.unlock_holdout, model=a.model))
+                   unlock_holdout=a.unlock_holdout, model=a.model or cfg.get("final_system", {}).get("model_dir", "a0")))
     elif a.cmd == "ablate-imbalance":
         from netirava.evaluation import ablate_imbalance
         r = ablate_imbalance(cfg)
@@ -188,6 +192,10 @@ def main(argv=None):
         out = K.path(cfg, "runs") / "ops_study" / a.tag / f"SUMMARY_{a.labels}.md"
         out.write_text(txt, encoding="utf-8")
         sys.stdout.buffer.write((txt + chr(10)).encode("utf-8"))
+    elif a.cmd == "ops-pool":
+        from netirava.ops import pooled_drift
+        r = pooled_drift(cfg, a.tags, a.out)
+        _print({m: {k: v["go"] for k, v in x.items()} for m, x in r["drift"].items()})
     elif a.cmd == "ui":
         import subprocess
         from pathlib import Path

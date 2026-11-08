@@ -12,6 +12,11 @@ Netirava chốt **ba thành phần** cho hai output đó:
 | 2 | **Family-aware classification:** trả nhãn theo họ tấn công; nhãn mịn chỉ khi đủ tin cậy, ngược lại `fine class uncertain` | (a) | Đã tích hợp, có test. Còn một chỗ chưa nhất quán ở severity (P1) |
 | 3 | **Incident triage interface:** gom alert thành incident, ưu tiên, budget analyst, feedback | (b) | Đã chạy (Streamlit, CLI, export) |
 
+**Cập nhật ops study (2026-11-08, [`OPS_STUDY_RESULTS.md`](OPS_STUDY_RESULTS.md)):**
+- **D1 đã chốt theo luật khai báo trước:** model cuối là pilot `pilot_cns/s0` (nhãn sửa). Trên 5 cửa sổ chưa từng chạm H5–H9, nó có FPR 0.065% so với 0.085% của A0 v2, 15.9 so với 24.1 incident báo nhầm/giờ, recall HOIC 0.81 so với 0.04. A0 v2 là baseline.
+- **Thành phần 3 có thêm correlation theo campaign** (đích + họ, causal), nhưng chỉ là **view experimental**: lợi ích có thật trên DDoS nhiều nguồn (episode phủ 0.80 → 1.00, số mục 46 → 5/giờ), song **NO-GO** vì 5–7% incident benign bị gộp vào campaign tấn công (luật ≤ 5%). Đơn vị mặc định vẫn là source incident.
+- **Thêm drift monitor** (nhánh song song, không đổi quyết định): chỉ báo thay đổi phân phối so với cửa sổ calibration. Chưa đủ bằng chứng để coi là ước lượng FPR (INCONCLUSIVE).
+
 **Innovation nằm ở thiết kế tích hợp ba thành phần cùng bằng chứng thực nghiệm minh bạch.** Netirava **không** tuyên bố thuật toán mới, SOTA, khả năng phát hiện zero-day hay khả năng IPS. Giới hạn đầy đủ ở [`CURRENT_LIMITATIONS.md`](CURRENT_LIMITATIONS.md).
 
 ## 1. Pipeline
@@ -86,6 +91,14 @@ Chi tiết module, contract dữ liệu và các bất biến: [`ARCHITECTURE.md
   - nén flow thành incident 243–1,024 lần;
   - H1 DDoS: priority phủ 10/10 episode với B = 10/giờ, FIFO 0/10 (**exploratory**: luật ưu tiên được đặt sau khi thấy FIFO).
 
+## 4b. Bổ sung từ ops study (2026-11-08)
+| Phần | Vai trò | Trạng thái | Bằng chứng |
+|---|---|---|---|
+| **Severity family-aware** (sửa L-4.4) | Incident uncertain lấy severity của họ, không của lớp mịn bị giấu | Đã tích hợp, có test | `test_uncertain_flow_never_gets_withheld_class_severity` |
+| **`notified` tách khỏi `queue_rank_*`**, `severity_source` trong export (L-6.5, P1.3) | Không nhầm budget FIFO lúc chạy với hàng xem xét | Đã tích hợp | `export/incidents.csv`, UI |
+| **Campaign correlation** (`campaign.py`) | Gom source incident theo (đích, họ); mỗi giờ một "campaign update" | **Experimental view** (NO-GO trên HO) | `OPS_STUDY_RESULTS.md` §4 |
+| **Drift monitor** (`drift.py`) | AR, TR, score PSI, feature PSI theo cửa sổ 15 phút so với C1 | Chỉ báo trên UI, không đổi quyết định | `OPS_STUDY_RESULTS.md` §5 |
+
 ## 5. Ngoài phạm vi cuối (giữ làm bằng chứng nghiên cứu)
 | Hướng | Kết quả | Trạng thái |
 |---|---|---|
@@ -108,3 +121,4 @@ Không mở lại các hướng trên nếu chưa có quyết định mới củ
    - model train trên nhãn đã sửa giảm FP theo flow.
 3. **Output trung thực về độ chi tiết:** family-aware trả "Web attack — fine class uncertain" thay vì đoán bừa XSS/SQLi, mà không đổi bất kỳ alert nào.
 4. **Triage theo incident có budget:** nén 2–3 bậc độ lớn; hàng ưu tiên thay vì FIFO; feedback append-only.
+5. **Hai cải tiến vận hành được kiểm chứng bằng holdout mới, kể cả khi kết quả âm:** correlation theo campaign giảm số mục phải mở khoảng 6 lần nhưng bị NO-GO vì gộp nhầm benign; drift monitor được giữ như chỉ báo. Holdout mới cũng là đánh giá độc lập đầu tiên của model nhãn sửa (FPR ≤ 0.127% trên 5 cửa sổ chưa từng chạm).

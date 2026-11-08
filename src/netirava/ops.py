@@ -421,7 +421,7 @@ def go_report(cfg, tag, benefit_scenario="holdout-ddos-hoic"):
 def summarize(cfg, tag, label_set="original", alphas=None, B=None, policy=None):
     """Compact Markdown tables of runs/ops_study/<tag>/ (correlation per scenario and unit; drift per model)."""
     d = K.path(cfg, "runs") / "ops_study" / tag
-    corr = json.loads((d / "CORRELATION.json").read_text(encoding="utf-8"))
+    corr = json.loads((d / "CORRELATION.json").read_text(encoding="utf-8")) if (d / "CORRELATION.json").exists() else {}
     drift = json.loads((d / "DRIFT.json").read_text(encoding="utf-8"))
     pr = cfg["ops"]["queue"]["primary"]
     B, policy = B or pr["budget"], policy or pr["policy"]
@@ -460,3 +460,15 @@ def summarize(cfg, tag, label_set="original", alphas=None, B=None, policy=None):
                              f"({f(m['false_alarm_rate_nonE_benign_only'], 2)} / {f(m['false_alarm_rate_nonE_attack'], 2)}) | "
                              f"{m['alarms']} |")
     return "\n".join(lines)
+
+
+def pooled_drift(cfg, tags, out_tag):
+    """RQ-D on the union of the monitor windows of several ops-study tags (e.g. dev + holdout), per model."""
+    root = K.path(cfg, "runs") / "ops_study"
+    win = pd.concat([pd.read_csv(root / t / "drift_windows.csv").assign(study_tag=t) for t in tags], ignore_index=True)
+    out = root / out_tag
+    out.mkdir(parents=True, exist_ok=True)
+    win.to_csv(out / "drift_windows.csv", index=False)
+    summ = {"tag": out_tag, "pooled_from": list(tags), "drift": {md: drift_summary(g, cfg) for md, g in win.groupby("model_dir")}}
+    (out / "DRIFT.json").write_text(json.dumps(summ, indent=1, default=_js), encoding="utf-8")
+    return summ

@@ -14,6 +14,7 @@ Mỗi số liệu trong báo cáo đều truy ngược được về artifact d�
 | Subset CIC18-Causal-Demo-v1 (bản hiện tại) | `artifacts/cic18_causal_demo_v1/manifest.json`: 3,139,471 row; `stream.parquet` sha1 `b7e43a671687…`; `truth.parquet` sha1 `4bb8de42532d…`. Các run cũ ghi sha1 của manifest lúc chạy (trong registry) |
 | Nhãn gốc | `truth.parquet` (NF-v3, không bao giờ bị sửa) |
 | Nhãn đã sửa theo CNS2022 | `truth_cns2022.parquet` sha1 `ff679256a42c…`, `truth_cns2022.summary.json`; code `relabel.py` |
+| Subset CIC18-Ops-Holdout-v1 | `artifacts/ops_holdout_v1/manifest.json`: 1,489,831 row (H5–H9), derived riêng, `flow_id` = row id của CSV gốc |
 | Chuỗi thay đổi subset | MVP (2.97M row) → v1 holdout H1 (+192,863) → v2 cửa sổ web theo scope (bỏ R2) → v3 holdout H2 (+192,674). Mỗi bước có commit và ghi chú trong `DATASET_CARD.md` |
 
 ## Thí nghiệm (theo thứ tự)
@@ -32,6 +33,7 @@ Mỗi số liệu trong báo cáo đều truy ngược được về artifact d�
 | 11 | Family-aware (tích hợp chính thức) | DEV | `runs/20261108T143728_a0-shadow_fast/{FAMILY_REPORT*.json, export/}`, `runs/family_aware_triage_impact.json` | `family-report`, `export` | [`FAMILY_AWARE_FINAL_REPORT.md`](FAMILY_AWARE_FINAL_REPORT.md) | bản hoàn thiện |
 | 12 | Pilot model chạy replay độc lập (smoke test) | — | `runs/20261108T143803_a0_fast` | `replay --model pilot_cns/s0` | — | bản hoàn thiện |
 | 13 | **Feature-engineering study** (EDA, preprocessing, nhóm feature, control, shortcut): v2 bỏ shortcut bị **holdout H3/H4 bác bỏ (NO-GO)**; FPR ≤ 0.1% đạt trên ngày mới H3 | DEV (Phase 4) + **HO** (H3/H4, khai báo ở `e820605`) | `artifacts/fe_study_v1/{eda,study}/`, `runs/fe_study/` | `eda`, `fe-study`, `fe-final` (`configs/fe_study.yaml`) | [`EDA_REPORT.md`](EDA_REPORT.md), [`FEATURE_EVALUATION.md`](FEATURE_EVALUATION.md), [`FE_HOLDOUT_RESULTS.md`](FE_HOLDOUT_RESULTS.md) | `e820605` → `4019679` (tag `fe-v2-frozen`) |
+| 14 | **Ops study**: campaign correlation (RQ-C) **NO-GO** (contamination 5–7%); drift monitor (RQ-D) INCONCLUSIVE, giữ làm chỉ báo; RQ-M chọn pilot `pilot_cns/s0` | DEV (`runs/20261108T190136_a0_fast`, `…190143…`) + EXP (H2) + **HO** (H5–H9 mới: `runs/20261108T211051_a0_fast`, `…211057…`) | `runs/ops_study/{dev,exp_h2,holdout,pooled}/`, `artifacts/ops_holdout_v1/`, `artifacts/models/*/drift_reference.json` | `drift-reference`, `ops-study`, `ops-go`, `ops-pool`, `ops-summary` (`configs/ops_holdout.yaml`) | [`OPS_STUDY_PREREG.md`](OPS_STUDY_PREREG.md), [`OPS_STUDY_RESULTS.md`](OPS_STUDY_RESULTS.md) | `e1b473a` → `9ab983c` (tag `ops-v1-frozen`) → kết quả |
 
 **Kết quả âm được giữ:** GraphIDS NO-GO; V4a không có lợi trên dev; V4b bị bác bỏ trên H1; triage theo severity không tốt hơn theo volume; A1+B2 (NP-v1) không chuyển giao qua đợt; A0 v2 có XSS F1 = 0 trên nhãn đã sửa; bỏ cột shortcut làm kết quả holdout H3/H4 kém hơn.
 

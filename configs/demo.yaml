@@ -102,9 +102,12 @@ triage:                                     # v3, declared before the DoS-Hulk h
   # review policies compared at the same budget B (incidents / simulated hour):
   #   fifo (causal), volume (most alerted flows), severity (max severity, then alerted flows) <- proposed
   proposed_policy: severity
-final_system:                               # what the DoS-Hulk holdout evaluates (frozen with this commit)
+final_system:                               # v3 (DoS-Hulk holdout): A0 v2; updated 2026-11-08 by the pre-declared RQ-M rule (ops study)
   detector: A0 v2 (artifacts/models/a0), V1 decision at primary_alpha 0.001; other variants/levels reported
   triage: severity policy, B in incident_budgets_per_hour
+  model_dir: pilot_cns/s0                   # D1: RQ-M rule held on the untouched H5-H9 (FPR, false incidents/h, HOIC recall); A0 v2 kept as baseline
+  review_unit: source incident              # RQ-C NO-GO; campaign = experimental view
+  drift_monitor: indicator only (tab "Threshold reliability"), never changes decisions
 family:                                     # family-aware labelling (src/netirava/family.py); labels only, never probabilities
   ambiguous: {Web: [Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]}
   tau: 0.8                                  # fine web label only if its share of the Web family mass >= tau
@@ -137,3 +140,7 @@ ops:                                        # ops study (2026-11-08), pre-regist
     cat_top_k: 20
     go_rules: {spearman_min: 0.5, recall_min: 0.8, false_alarm_max: 0.2, min_events: 5}
   model_rule: {incident_ratio_max: 1.5, hoic_recall_margin: 0.05}   # RQ-M: recommend pilot_cns/s0 only if all hold
+  # Decisions applied after the one-time holdout run (docs/OPS_STUDY_RESULTS.md, runs/ops_study/holdout/GO.json):
+  ui_default_unit: source incident          # RQ-C NO-GO (G3 contamination 5.1-7.0% > 5%): campaigns stay an experimental view
+  ui_campaign_note: "Experimental view: NO-GO on the ops holdout (5-7% of benign source incidents were merged into attack campaigns, limit 5%)."
+  ui_monitor_note: "Label-free distribution-change indicator vs the calibration window (where the threshold was locked). Not an FPR estimate: on the holdout, the tail ratio tracked realized FPR only for the pilot model (Spearman 0.56) and the alarm recall is inconclusive (< 5 windows exceeded 2x the target FPR). It never changes an alert."

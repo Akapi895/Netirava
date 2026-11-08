@@ -149,7 +149,8 @@ def monitor_tab(cfg, run_id, meta):
     st.dataframe(m[["window_utc", "status", "n_flows", f"alerts@{a}", f"AR@{a}", f"TR@{a}", f"FPR_est@{a}", "S_PSI",
                     "F_PSI_median", "F_PSI_n_major", "F_PSI_top"]], width="stretch", hide_index=True)
     st.caption("TR = flows just below the threshold vs the calibration window (ratio); AR = alerted flows vs alpha; "
-               "S_PSI / F_PSI = score / feature distribution change (PSI). FPR_est = alpha x TR.")
+               "S_PSI / F_PSI = score / feature distribution change (PSI). FPR_est = alpha x TR, NOT validated as an FPR "
+               "estimate (docs/OPS_STUDY_RESULTS.md). Alarms fire mostly on windows that contain attacks.")
 
 
 def main():
