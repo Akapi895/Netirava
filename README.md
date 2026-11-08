@@ -12,6 +12,7 @@ Phản ứng chỉ là mô phỏng (incident/notification): không block, không
 | [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) | Subset CIC18-Causal-Demo-v1: cửa sổ, vai trò, support, host overlap, giới hạn |
 | [`docs/MODEL_CARD_A0.md`](docs/MODEL_CARD_A0.md) | A0-CIC |
 | [`docs/RESULTS_MVP.md`](docs/RESULTS_MVP.md) | Kết quả run MVP |
+| [`docs/RESULTS_DECISION.md`](docs/RESULTS_DECISION.md) | Decision layer V1–V4b: dev (Bot, Web) và holdout DDoS |
 
 ## Cấu trúc
 ```text
@@ -26,6 +27,7 @@ src/netirava/
   policy.py              candidate → incident theo entity, cooldown và budget theo event time
   storage.py             run.json, detections.parquet, alerts.db (feedback append-only)
   evaluation.py          evaluator, module duy nhất đọc nhãn
+  decision.py            decision layer offline: V1 A0, V2 anomaly, V3 OR, V4a/V4b entity + ablation, nhiều mức FPR
 tests/                   pipeline end-to-end trên dữ liệu tổng hợp
 ```
 
@@ -68,6 +70,10 @@ $py = ".venv\Scripts\python.exe"
 & $py -m netirava train-anomaly --config configs/demo.yaml
 & $py -m netirava replay --config configs/demo.yaml --mode a0-shadow            # fast
 & $py -m netirava replay --config configs/demo.yaml --mode a0-shadow --pace paced --speed 60 --segments R1_0302_bot --max-events 30000
+& $py -m netirava score-calibration --config configs/demo.yaml
+& $py -m netirava decide --run <dev_run_id>                     # dev scenarios, all FPR levels
+& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow --segments H1_0220_ddos --unlock-holdout
+& $py -m netirava decide --run <holdout_run_id> --unlock-holdout # only after the method is frozen
 & $py -m netirava evaluate  --run <run_id>
 & $py -m netirava incidents --run <run_id> --limit 5
 & $py -m netirava feedback  --run <run_id> --alert-id 1 --status true_positive --source analyst --confirmed-by <name>

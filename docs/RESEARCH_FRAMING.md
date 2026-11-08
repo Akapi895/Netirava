@@ -43,7 +43,7 @@ Technical, Innovation, Rigor và Impact chiếm 75% → **bằng chứng định
 |---|---|---|
 | **RQ1, gap** | A0 bỏ sót những tấn công chưa thấy nào? | **[ĐÃ ĐO]** Ở FPR 0.1% (khóa trên calibration, FPR thực đạt 0.0995%): Bot 0/8 episode (recall flow 0.000); Web 2/97 (0.0055); Infiltration 3/118 (0.0016, nhãn gắn cờ). Known-within-episode: recall 0.9985, macro-F1 0.993 (lạc quan, xem §5) |
 | **RQ2, tính bổ sung** | Anomaly có thông tin về đúng các mẫu A0 bỏ sót không? | **[DẤU HIỆU]** AUROC Bot: IsolationForest 0.923 so với A0 0.718. Nhưng ở FPR 0.1% theo từng flow, IsolationForest cho recall 0 và chỉ thêm alert benign (FPR shadow 0.05–0.15%) |
-| **RQ3, fusion** | Cơ chế kết hợp có vượt A0 **và** OR ở **cùng** FPR tổng và cùng budget không? | **[CHƯA ĐO]** |
+| **RQ3, fusion** | Cơ chế kết hợp có vượt A0 **và** OR ở **cùng** FPR tổng và cùng budget không? | **[ĐÃ ĐO]** ([`RESULTS_DECISION.md`](RESULTS_DECISION.md)). V4b (đã khóa) giúp Bot trên dev ở α = 1% nhưng **không cải thiện trên holdout DDoS**, và kém A0 ở α = 0.5–1%. Claim bị bác bỏ |
 | **RQ4, không gây hại** | Chất lượng known class, benign FPR và tải cảnh báo có giữ được không? | Baseline A0 [ĐÃ ĐO]; biến thể [CHƯA ĐO] |
 | **RQ5, thời gian** | Model và threshold đã khóa có ổn định ở giai đoạn sau không? | **[ĐÃ ĐO] một phần:** benign FPR trên các replay sau calibration là 0.007–0.029%; chưa có bảng theo từng cửa sổ |
 
