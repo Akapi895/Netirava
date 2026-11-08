@@ -1,0 +1,71 @@
+# Netirava MVP demo config — CIC18-Causal-Demo-v1. Paths are relative to the repo root.
+# Windows, roles, known classes, thresholds targets and policy parameters were fixed from
+# `inspect` support counts BEFORE any model was trained (see docs/DATASET_CARD.md).
+dataset:
+  name: NF-CSE-CIC-IDS2018-v3
+  sha1: ddcad6d826b73a128a447a0189137efd6c8f70c9     # bagit manifest of the shipped CSV
+  subset_name: CIC18-Causal-Demo-v1
+  max_rows: 3000000                                   # engineering cap (prepare fails above it)
+paths:
+  raw_csv: datasets/NF-CSE-CIC-IDS2018-v3/f78acbaa2afe1595_NFV3DATA-A11964_A11964/data/NF-CICIDS2018-v3.csv
+  derived: artifacts/cic18_causal_demo_v1
+  models: artifacts/models
+  runs: runs
+
+# Every flow whose FLOW_START is in [start_utc, end_utc) is kept (whole observed network,
+# no row sampling, no class balancing). Gaps between windows are real capture gaps of the demo.
+windows:
+  - {id: T1_0214_ftp_head,  role: train,        start_utc: "2018-02-14 14:25", end_utc: "2018-02-14 15:05", scenario: known-train}
+  - {id: K1_0214_ftp_tail,  role: known_replay, start_utc: "2018-02-14 15:50", end_utc: "2018-02-14 16:20", scenario: known-within-episode}
+  - {id: T2_0214_ssh_head,  role: train,        start_utc: "2018-02-14 17:55", end_utc: "2018-02-14 18:50", scenario: known-train}
+  - {id: K2_0214_ssh_tail,  role: known_replay, start_utc: "2018-02-14 19:05", end_utc: "2018-02-14 19:40", scenario: known-within-episode}
+  - {id: T3_0215_gold_head, role: train,        start_utc: "2018-02-15 13:20", end_utc: "2018-02-15 13:55", scenario: known-train}
+  - {id: K3_0215_gold_tail, role: known_replay, start_utc: "2018-02-15 13:55", end_utc: "2018-02-15 14:20", scenario: known-within-episode}
+  - {id: T4_0215_slow_head, role: train,        start_utc: "2018-02-15 14:55", end_utc: "2018-02-15 15:25", scenario: known-train}
+  - {id: K4_0215_slow_tail, role: known_replay, start_utc: "2018-02-15 15:25", end_utc: "2018-02-15 15:50", scenario: known-within-episode}
+  - {id: C1_0220_benign,    role: calibration,  start_utc: "2018-02-20 12:00", end_utc: "2018-02-20 14:05", scenario: calibration}
+  - {id: R2_0222_web,       role: replay,       start_utc: "2018-02-22 18:00", end_utc: "2018-02-22 19:00", scenario: unknown-web}
+  - {id: S1_0228_infil,     role: stress,       start_utc: "2018-02-28 15:00", end_utc: "2018-02-28 15:40", scenario: stress-infiltration}
+  - {id: R1_0302_bot,       role: replay,       start_utc: "2018-03-02 13:30", end_utc: "2018-03-02 17:30", scenario: unknown-bot}
+
+labels:
+  flagged_classes: [Infilteration]          # label quality flag; reported separately, never used for claims
+  taxonomy:                                 # demo family (reporting only); raw labels are kept verbatim
+    Benign: Benign
+    FTP-BruteForce: BruteForce
+    SSH-Bruteforce: BruteForce
+    DoS_attacks-GoldenEye: DoS
+    DoS_attacks-Slowloris: DoS
+    Bot: Bot
+    Brute_Force_-Web: Web
+    Brute_Force_-XSS: Web
+    SQL_Injection: Web
+    Infilteration: Infiltration
+
+a0:
+  known_classes: [Benign, FTP-BruteForce, SSH-Bruteforce, DoS_attacks-GoldenEye, DoS_attacks-Slowloris]
+  reference_config: ../experiments/nextphase/configs.yaml   # NP-v1 recipe (inherited if present)
+  seed: 0
+  target_fpr: 0.001                         # pipeline-test operating point, not a production standard
+anomaly:
+  n_estimators: 100
+  max_samples: 256
+  contamination: auto
+  random_state: 0
+  n_jobs: 4
+  max_train_rows: 200000                    # deterministic sample (seed 0) of TRAIN benign rows
+  transform: log1p_signed                   # fixed, not learned
+  target_fpr: 0.001
+replay:
+  export_delay_ms: 0                        # lower-bound assumption; NOT measured from the CSV
+  decision_tick_ms: 1000                    # events are decided at the first tick >= available_at
+  chunk_events: 50000                       # vectorised scoring chunk (detectors are stateless per flow)
+  default_speed: 60                         # paced mode: simulated seconds per wall second
+  shadow_deadline_ms_per_event: 1.0         # shadow results slower than this per event are flagged late
+policy:
+  version: a0-policy-v1
+  entity: IPV4_SRC_ADDR
+  cooldown_ms: 900000                       # 15 min event time: candidates of an entity within it join one incident
+  budget_per_hour: 30                       # demo assumption (notifications per simulated hour); excess is logged
+evaluation:
+  episode_gap_ms: 1800000                   # proxy episode: same label + src IP, split at gaps > 30 min
