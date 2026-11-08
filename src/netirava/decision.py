@@ -176,6 +176,9 @@ def incidents(d, alert, cooldown_ms):
     return inc
 
 
+SEVERITY = {}   # filled from cfg["triage"]["severity"] in evaluate_run
+
+
 def triage_metrics(d, alert, ep, cooldown_ms, budgets):
     """Incident-level triage view of a flow-level alert vector."""
     inc = incidents(d, alert, cooldown_ms)
@@ -185,8 +188,10 @@ def triage_metrics(d, alert, ep, cooldown_ms, budgets):
     if not m.any():
         r.update(incidents=0, compression_flows_per_incident=None, incident_precision=None)
         return r
-    g = pd.DataFrame({"inc": inc[m], "att": att[m], "t": d.decision_at.to_numpy()[m], "ep": ep[m]})
-    agg = g.groupby("inc").agg(t0=("t", "min"), has_att=("att", "any"), n=("att", "size"))
+    sev = d.a0_pred.map(SEVERITY).fillna(4).to_numpy() if "a0_pred" in d else np.full(len(d), 4.0)
+    lab = d[F.LABEL].to_numpy()
+    g = pd.DataFrame({"inc": inc[m], "att": att[m], "t": d.decision_at.to_numpy()[m], "ep": ep[m], "sev": sev[m], "lab": lab[m]})
+    agg = g.groupby("inc").agg(t0=("t", "min"), has_att=("att", "any"), n=("att", "size"), sev=("sev", "max"))
     n_hours = max(1, (d.decision_at // HOUR).nunique())
     r.update(incidents=int(len(agg)), incidents_per_hour=float(len(agg) / n_hours),
              compression_flows_per_incident=float(m.sum() / len(agg)),
@@ -198,7 +203,9 @@ def triage_metrics(d, alert, ep, cooldown_ms, budgets):
     #   fifo     - the first B incidents opened in each hour (fully causal)
     #   priority - hourly review queue: the B incidents with most alerted flows in that hour (ties: earlier)
     orders = {"fifo": agg.assign(h=hour).sort_values(["h", "t0"]),
-              "priority": agg.assign(h=hour).sort_values(["h", "n", "t0"], ascending=[True, False, True])}
+              "priority": agg.assign(h=hour).sort_values(["h", "n", "t0"], ascending=[True, False, True]),
+              "severity": agg.assign(h=hour).sort_values(["h", "sev", "n", "t0"], ascending=[True, False, False, True])}
+    ep_lab = pd.Series(lab[att & (ep >= 0)], index=ep[att & (ep >= 0)]).groupby(level=0).first()
     for pol, o in orders.items():
         rank = o.groupby("h").cumcount()
         for B in budgets:
@@ -208,6 +215,9 @@ def triage_metrics(d, alert, ep, cooldown_ms, budgets):
             k = agg.loc[list(kept)] if kept else agg.iloc[:0]
             r[f"{pol}_episode_recall@{B}inc/h"] = float(len(covered) / len(eps)) if len(eps) else None
             r[f"{pol}_incident_precision@{B}inc/h"] = float(k.has_att.mean()) if len(k) else None
+            if len(eps):
+                cov = pd.Series(1, index=covered).reindex(ep_lab.index, fill_value=0)
+                r[f"{pol}_episode_recall_by_label@{B}inc/h"] = cov.groupby(ep_lab.values).mean().round(4).to_dict()
     return r
 
 
@@ -256,7 +266,7 @@ def evaluate_run(cfg, run_id, params=None, unlock_holdout=False, out_name=None, 
     from netirava.storage import RunStore
     dc = cfg["decision"]
     st = RunStore(cfg, run_id)
-    det = st.detections(columns=["flow_id", "segment", "entity", "decision_at", "a0_score", "an_score"])
+    det = st.detections(columns=["flow_id", "segment", "entity", "decision_at", "a0_score", "an_score", "a0_pred"])
     if st.meta().get("unlock_holdout") and not unlock_holdout:
         raise RuntimeError("run contains the holdout; pass unlock_holdout=True")
     truth = load_truth(cfg)[["flow_id", F.LABEL]]
@@ -265,9 +275,11 @@ def evaluate_run(cfg, run_id, params=None, unlock_holdout=False, out_name=None, 
     scen = {w["id"]: w["scenario"] for w in window_bounds(cfg)}
     d["scenario"] = d.segment.map(scen)
     if not unlock_holdout:
-        d = d[d.scenario != "holdout-ddos"]
+        d = d[~d.scenario.str.startswith("holdout")]
     cal = pd.read_parquet(cal_path or (K.path(cfg, "models") / "calibration_scores.parquet"))
     p = params or dc["v4"]
+    SEVERITY.clear()
+    SEVERITY.update(cfg.get("triage", {}).get("severity", {}))
     res = {"run_id": run_id, "params": p, "levels": {}}
     for alpha in dc["fpr_levels"]:
         t = calibrate(cal, alpha, p["W_ms"], p["rho"], p.get("Wb_ms"), p.get("m", 10))

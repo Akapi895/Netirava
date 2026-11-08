@@ -31,6 +31,9 @@ windows:
   # v2 (2026-11-08): rare web classes become KNOWN. Observation scope = the attacked web servers (every flow
   # from/to them, benign included); not the whole network. Split by time within the single 02-22 episode.
   # Replaces R2_0222_web (whole-network unknown-web replay, used in MVP and decision dev runs).
+  # Second holdout (v3, declared 2026-11-08 before any score on it): DoS-Hulk, an unseen class of a partly known
+  # family (DoS), on an untouched day (02-16). Window by time only; covers the whole 13-min burst (17:45-17:58).
+  - {id: H2_0216_hulk,      role: holdout,      start_utc: "2018-02-16 17:35", end_utc: "2018-02-16 18:05", scenario: holdout-hulk}
   - {id: T5_0222_web_head,  role: train,        start_utc: "2018-02-22 12:00", end_utc: "2018-02-22 17:00", scenario: known-train, scope_hosts: [172.31.69.28, 172.31.69.1]}
   - {id: K5_0222_web_tail,  role: known_replay, start_utc: "2018-02-22 17:00", end_utc: "2018-02-22 22:00", scenario: known-within-episode, scope_hosts: [172.31.69.28, 172.31.69.1]}
   - {id: S1_0228_infil,     role: stress,       start_utc: "2018-02-28 15:00", end_utc: "2018-02-28 15:40", scenario: stress-infiltration}
@@ -50,6 +53,7 @@ labels:
     SQL_Injection: Web
     Infilteration: Infiltration
     DDoS_attacks-LOIC-HTTP: DDoS
+    DoS_attacks-Hulk: DoS
 
 a0:
   known_classes: [Benign, FTP-BruteForce, SSH-Bruteforce, DoS_attacks-GoldenEye, DoS_attacks-Slowloris,
@@ -88,3 +92,14 @@ decision:                                   # offline decision layer (src/netira
   grid: {W_ms: [60000, 300000, 900000], rho: [0.01, 0.05]}   # pre-declared V4 grid
   grid_v4b: {W_ms: [60000, 300000, 900000], m: [10, 50]}       # second (last) design iteration, declared 2026-11-08
   v4: {W_ms: 60000, rho: 0.01, Wb_ms: 60000, m: 50}   # FROZEN 2026-11-08 from dev selection (V4a grid, then V4b grid); primary_alpha unchanged
+triage:                                     # v3, declared before the DoS-Hulk holdout (2026-11-08)
+  # severity of the incident's predicted class (domain judgement: impact of a successful attack), 1-5.
+  # Benign = alert raised without an attack class (score/anomaly only) -> treated as unknown suspicious.
+  severity: {SQL_Injection: 5, Brute_Force_-XSS: 4, Brute_Force_-Web: 4, Benign: 4,
+             FTP-BruteForce: 3, SSH-Bruteforce: 3, DoS_attacks-GoldenEye: 3, DoS_attacks-Slowloris: 3}
+  # review policies compared at the same budget B (incidents / simulated hour):
+  #   fifo (causal), volume (most alerted flows), severity (max severity, then alerted flows) <- proposed
+  proposed_policy: severity
+final_system:                               # what the DoS-Hulk holdout evaluates (frozen with this commit)
+  detector: A0 v2 (artifacts/models/a0), V1 decision at primary_alpha 0.001; other variants/levels reported
+  triage: severity policy, B in incident_budgets_per_hour
