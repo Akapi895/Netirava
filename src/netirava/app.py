@@ -21,6 +21,9 @@ from netirava import features as F
 from netirava.storage import RunStore
 
 
+FAMILY_TAU = 0.8   # family-aware output: fine web label only if its share of the Web family mass >= tau
+
+
 def _args():
     a = dict(zip(sys.argv[1::2], sys.argv[2::2]))
     return a.get("--config", "configs/demo.yaml"), a.get("--run")
@@ -37,9 +40,14 @@ def load(cfg_path, run_id):
         alerts = pd.read_sql("SELECT alert_id, incident_id, status FROM alerts", c)
     meta = stx.meta()
     rare = set(cfg["a0"].get("rare_classes", []))
+    from netirava.family import render
+    classes = meta["a0"]["classes"]
+    P = det[[f"p_{c}" for c in classes]].to_numpy()
+    det = det.assign(fa_label=render(P, classes, {"Web": sorted(rare)}, FAMILY_TAU))
     g = det.groupby("incident_id")
     top = g.a0_pred.agg(lambda s: s.value_counts().index[0])
     summ = pd.DataFrame({"n_flows": g.size(), "max_score": g.a0_score.max(), "top_class": top,
+                         "label_shown": g.fa_label.agg(lambda s: s.value_counts().index[0]),
                          "first": g.decision_at.min(), "last": g.decision_at.max(),
                          "rare_class": g.a0_pred.agg(lambda s: bool(set(s) & rare))})
     inc = inc.merge(summ, left_on="incident_id", right_index=True).merge(alerts, on="incident_id", how="left")
@@ -48,8 +56,6 @@ def load(cfg_path, run_id):
     inc["hour"] = pd.to_datetime(inc["first"], unit="ms", utc=True).dt.strftime("%m-%d %H:00")
     sev = cfg.get("triage", {}).get("severity", {})
     inc["severity"] = inc.top_class.map(sev).fillna(4).astype(int)
-    amb = {"Brute_Force_-XSS", "SQL_Injection"}          # 75-82% of their flows share fingerprints with the other
-    inc["label_shown"] = inc.top_class.where(~inc.top_class.isin(amb), "Web attack (XSS/SQLi ambiguous)")
     inc["priority"] = inc.n_flows
     return cfg, meta, inc.sort_values(["priority", "max_score"], ascending=False), det
 

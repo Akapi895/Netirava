@@ -164,3 +164,42 @@ def test_decision_layer_calibration_and_causal_evidence(synth):
     k = int(np.searchsorted(da, da[len(d) // 2], side='right'))   # cut at a tick boundary
     pre = entity_evidence(d.iloc[:k].reset_index(drop=True), flag[:k], 300000)
     assert (full[:k] == pre).all()
+
+
+def test_family_aware_keeps_probabilities_and_binary_alerts():
+    from netirava.family import render, UNCERTAIN
+    rng = np.random.default_rng(0)
+    classes = ["Benign", "A", "X", "S"]
+    P = rng.dirichlet(np.ones(4), 5000)
+    P0 = P.copy()
+    thr = 0.5
+    alert_before = (1 - P[:, 0]) >= thr
+    lab = render(P, classes, {"Web": ["X", "S"]}, tau=0.8)
+    assert np.array_equal(P, P0)                                  # probabilities untouched
+    assert np.array_equal((1 - P[:, 0]) >= thr, alert_before)     # binary decision unchanged
+    am = np.asarray(classes, dtype=object)[P.argmax(1)]
+    outside = ~np.isin(am, ["X", "S"])
+    assert (lab[outside] == am[outside]).all()                    # only family argmax rows re-rendered
+    unc = lab == UNCERTAIN.format(fam="Web")
+    share = P[np.arange(len(P)), P.argmax(1)] / P[:, [2, 3]].sum(1)
+    assert (share[unc] < 0.8).all() and np.isin(am[unc], ["X", "S"]).all()
+
+
+def test_relabel_rules_basic():
+    import pandas as pd
+    from netirava.relabel import relabel, UTC
+    rows = [  # (start, src, dst, proto, dport, sport, in_pkts, in_bytes, label)
+        (UTC("2018-02-28 15:00"), "172.31.69.24", "172.31.69.15", 6, 445, 50000, 1, 44, "Benign"),
+        (UTC("2018-02-28 15:00"), "172.31.69.24", "172.31.69.15", 17, 67, 68, 1, 300, "Benign"),
+        (UTC("2018-02-22 18:00"), "18.218.115.60", "172.31.69.28", 6, 80, 50001, 30, 9000, "SQL_Injection"),
+        (UTC("2018-02-22 18:00"), "52.14.77.172", "172.31.69.28", 17, 500, 500, 6, 3168, "Brute_Force_-XSS"),
+        (UTC("2018-02-22 18:00"), "5.188.11.188", "172.31.69.28", 6, 445, 40000, 2, 100, "Brute_Force_-Web"),
+        (UTC("2018-02-14 15:00"), "1.2.3.4", "172.31.69.28", 6, 21, 40000, 2, 100, "FTP-BruteForce"),
+    ]
+    df = pd.DataFrame(rows, columns=["FLOW_START_MILLISECONDS", "IPV4_SRC_ADDR", "IPV4_DST_ADDR", "PROTOCOL",
+                                     "L4_DST_PORT", "L4_SRC_PORT", "IN_PKTS", "IN_BYTES", "label_original"])
+    df["flow_id"] = range(len(df))
+    a = relabel(df)
+    assert list(a.label_corrected) == ["Portscan", "Benign", "Brute_Force_-XSS", "Benign", "Indeterminate", "FTP-BruteForce"]
+    assert list(a.status) == ["confirmed", "unchanged", "confirmed", "background", "indeterminate", "not_audited"]
+    assert list(a.label_original) == list(df.label_original)       # original labels kept

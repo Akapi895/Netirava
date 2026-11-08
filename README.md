@@ -11,6 +11,7 @@ Phản ứng chỉ là mô phỏng (incident/notification): không block, không
 | [`docs/RESULTS_FINAL.md`](docs/RESULTS_FINAL.md) | **Kết quả cuối**: (a) lớp hiếm, (b) triage theo incident, tấn công thay đổi, chi phí |
 | [`docs/RESULTS_FINAL_ADDENDUM.md`](docs/RESULTS_FINAL_ADDENDUM.md) | **Đọc kèm RESULTS_FINAL**: lỗi nhãn NF-v3 (forensics) |
 | [`docs/FP_LABEL_FORENSICS.md`](docs/FP_LABEL_FORENSICS.md) · [`MINORITY_INFORMATION_AUDIT.md`](docs/MINORITY_INFORMATION_AUDIT.md) · [`SOTA_METHOD_REVIEW.md`](docs/SOTA_METHOD_REVIEW.md) · [`NEXT_RESEARCH_DECISION.md`](docs/NEXT_RESEARCH_DECISION.md) | Audit FP và nhãn, giới hạn thông tin lớp hiếm, review paper, quyết định nghiên cứu |
+| [`CORRECTED_LABEL_AUDIT.md`](docs/CORRECTED_LABEL_AUDIT.md) · [`CORRECTED_LABEL_PILOT_RESULTS.md`](docs/CORRECTED_LABEL_PILOT_RESULTS.md) · [`FAMILY_AWARE_EVALUATION.md`](docs/FAMILY_AWARE_EVALUATION.md) · [`DATA_SUFFICIENCY_DECISION.md`](docs/DATA_SUFFICIENCY_DECISION.md) | Nhãn sửa theo CNS2022, pilot, family-aware output, quyết định về dữ liệu |
 | [`docs/RESEARCH_FRAMING.md`](docs/RESEARCH_FRAMING.md) | Bài toán theo đề chính thức, research question, protocol, metric, luật chứng minh |
 | [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) | Subset CIC18-Causal-Demo-v1: cửa sổ, vai trò, support, host overlap, giới hạn |
 | [`docs/MODEL_CARD_A0.md`](docs/MODEL_CARD_A0.md) | A0-CIC |
@@ -30,7 +31,10 @@ src/netirava/
   policy.py              candidate → incident theo entity, cooldown và budget theo event time
   storage.py             run.json, detections.parquet, alerts.db (feedback append-only)
   evaluation.py          evaluator (module duy nhất đọc nhãn), ablation imbalance
-  app.py                 giao diện triage (Streamlit): hàng incident, chi tiết, feedback
+  app.py                 giao diện triage (Streamlit): hàng incident, chi tiết, feedback, nhãn family-aware
+  relabel.py             nhãn sửa theo CNS2022 (truth_cns2022.parquet; nhãn gốc giữ nguyên)
+  pilot.py               pilot A0 trên nhãn đã sửa (3 seed) so với A0 v2
+  family.py              family-aware output (không đổi xác suất hay alert binary)
   decision.py            decision layer offline: V1 A0, V2 anomaly, V3 OR, V4a/V4b entity + ablation, nhiều mức FPR
 tests/                   pipeline end-to-end trên dữ liệu tổng hợp
 ```

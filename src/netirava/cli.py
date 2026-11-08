@@ -14,7 +14,7 @@ def _print(obj):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="netirava")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report"):
+    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report", "relabel", "pilot-train", "pilot-eval"):
         p = sub.add_parser(name)
         p.add_argument("--config", default="configs/demo.yaml")
         if name == "train-a0":
@@ -84,6 +84,16 @@ def main(argv=None):
                     "rare": {c: (round(m["precision"], 3), round(m["recall"], 3), round(m["f1"], 3), m["support"])
                              for c, m in x["per_class"].items() if c in cfg["a0"]["rare_classes"]},
                     "delta_rare_vs_a0": x.get("delta_macro_f1_rare_vs_a0")} for v, x in r["variants"].items()})
+    elif a.cmd == "pilot-train":
+        from netirava.pilot import train_pilot
+        _print(train_pilot(cfg))
+    elif a.cmd == "pilot-eval":
+        from netirava.pilot import evaluate_pilot
+        r = evaluate_pilot(cfg)
+        _print({"eval_rows": r["eval_rows"], "support": r["support"]})
+    elif a.cmd == "relabel":
+        from netirava.relabel import build
+        _print(build(cfg))
     elif a.cmd == "minority-report":
         from netirava.evaluation import minority_report
         r = minority_report(cfg)
