@@ -218,6 +218,9 @@ def benign_segment_probe(d, cfg, seed=0, n_per=20_000):
     res = {}
     for c in F.FEATURES:
         x = b[[c]].to_numpy(float)
+        if len(np.unique(x[tr])) < 2:
+            res[c] = 0.0                      # constant feature: cannot identify anything
+            continue
         m = CatBoostClassifier(iterations=200, depth=4, verbose=0, random_seed=seed, thread_count=8)
         m.fit(x[tr], y[tr])
         res[c] = float(f1_score(y[te], m.predict(x[te]).ravel(), average="macro"))
@@ -326,9 +329,28 @@ def run_study(cfg):
         if acc:
             ref_name, ref_spec = f"G_{g}", spec
         save()
-    # 4) diagnostics on the final reference (seed 0)
     log["final_spec"] = ref_spec
     log["final_arm"] = ref_name
+    save()
+    return finish_study(cfg, log, d, ctx, tr)
+
+
+def finish_study(cfg, log=None, d=None, ctx=None, tr=None):
+    """Diagnostics on the frozen final reference (seed 0). Re-runnable without refitting the arms:
+    the final arm is re-derived from the recorded decisions in their declared order."""
+    path = K.path(cfg, "derived") / "study" / "STUDY.json"
+    if log is None:
+        log = json.loads(path.read_text(encoding="utf-8"))
+        ref_name, ref_spec = "G0", {}
+        for dec in log["decisions"]:
+            if str(dec["accepted"]) == "True":
+                ref_name = dec["group"]
+                ref_spec = log["arms"][ref_name]["spec"]
+        log["final_spec"], log["final_arm"] = ref_spec, ref_name
+        d, ctx = load(cfg)
+        tr = d[d.study_role == "inner_train"].copy()
+    seeds = cfg["fe_study"]["seeds"]
+    ref_spec = log["final_spec"]
     a = fit_arm(ref_spec, tr, seeds[0], cfg, ctx)
     cols = a["columns"]
     groups = {"ratio": [c for c in cols if c.startswith("r_")], "flag": [c for c in cols if c.startswith("f_")],
@@ -342,10 +364,105 @@ def run_study(cfg):
         .sort_values(ascending=False).head(25).round(2).to_dict()
     log["benign_segment_probe"] = benign_segment_probe(d, cfg)
     log["finished"] = time.strftime("%Y-%m-%d %H:%M:%S")
-    save()
-    return {"decisions": log["decisions"], "final_arm": ref_name, "final_spec": ref_spec}
+    path.write_text(json.dumps(log, indent=2, default=str), encoding="utf-8")
+    return {"decisions": log["decisions"], "final_arm": log["final_arm"], "final_spec": ref_spec}
 
 
 # --------------------------------------------------------------------------- Phase 5
+def _holdout_frame(cfg):
+    """Holdout rows (H3/H4) with labels, exact duplicates removed. Only called by run_final."""
+    from netirava.dataset import load_stream
+    from netirava.fe import drop_exact_duplicates
+    h = load_stream(cfg, roles=["holdout"])
+    ann = pd.read_parquet(K.path(cfg, "derived") / "truth_cns2022.parquet",
+                          columns=["flow_id", "label_original", "label_corrected", "status"])
+    h = drop_exact_duplicates(h.merge(ann, on="flow_id", how="left", validate="one_to_one"))
+    return h
+
+
+def _episodes(g, gap_ms=1_800_000):
+    a = g[g.label_corrected != BENIGN].sort_values("available_at")
+    ep = np.zeros(len(a), np.int64)
+    k = 0
+    for _, h in a.groupby([F.SRC, "label_corrected"]):
+        t = h.available_at.to_numpy()
+        e = np.r_[0, np.cumsum(np.diff(t) > gap_ms)] + k
+        ep[a.index.get_indexer(h.index)] = e
+        k = e.max() + 1
+    return pd.Series(ep, index=a.index)
+
+
+def _holdout_metrics(h, score, thr):
+    out = {}
+    for seg, g in h.groupby("segment"):
+        sc = score[h.index.get_indexer(g.index)]
+        alert = sc >= thr
+        ben = g.label_corrected.to_numpy() == BENIGN
+        k, n = int((alert & ben).sum()), int(ben.sum())
+        r = {"n_benign": n, "fp": k, "benign_fpr": k / n, "fpr_wilson95": wilson(k, n)}
+        if (~ben).any():
+            r["attack_rows"] = int((~ben).sum())
+            r["attack_recall"] = float(alert[~ben].mean())
+            ep = _episodes(g)
+            hit = pd.Series(alert[g.index.get_indexer(ep.index)], index=ep.index).groupby(ep).any()
+            r["episodes_detected"] = f"{int(hit.sum())}/{len(hit)}"
+        r.update(false_incidents(g, alert))
+        out[seg] = r
+    return out
+
+
 def run_final(cfg):
-    raise NotImplementedError("Phase 5 runs only after the study is frozen (tag fe-v2-frozen)")
+    import subprocess
+    tag = subprocess.run(["git", "tag", "--list", "fe-v2-frozen"], capture_output=True, text=True,
+                         cwd=K.ROOT).stdout.strip()
+    assert tag == "fe-v2-frozen", "Phase 5 runs only after the study is frozen (git tag fe-v2-frozen)"
+    from catboost import CatBoostClassifier
+    fs = cfg["fe_study"]
+    study = json.loads((K.path(cfg, "derived") / "study" / "STUDY.json").read_text(encoding="utf-8"))
+    final_spec = study["final_spec"]
+    d, ctx = load(cfg)
+    trn = d[final_train_mask(d)].copy()
+    h = _holdout_frame(cfg)
+    hctx = context_features(h).set_index(h.index)
+    ca = d[(d.study_role == "calib") & (d.label_corrected == BENIGN)]
+    res = {"final_spec": final_spec, "final_arm": study["final_arm"], "n_train": len(trn),
+           "holdout_rows": h.segment.value_counts().to_dict(),
+           "holdout_exact_duplicates_removed": h.attrs.get("exact_duplicates_removed"), "arms": {}}
+    arms = {"v2": final_spec, "reference_G0": {}}
+    for name, spec in arms.items():
+        res["arms"][name] = []
+        for s in fs["seeds"]:
+            a = fit_arm(spec, trn, s, cfg, ctx)
+            cs = 1 - predict(a, ca, ctx, s)[:, 0]
+            hs = 1 - predict(a, h, hctx, s)[:, 0]
+            row = {"seed": s, "n_features": len(a["columns"])}
+            for lvl in fs["fpr_levels"]:
+                thr, real = threshold_at_fpr(cs, lvl)
+                row[f"alpha_{lvl}"] = {"threshold": float(thr), "calib_fpr": float(real),
+                                       "holdout": _holdout_metrics(h, hs, thr)}
+            res["arms"][name].append(row)
+            print(name, s, json.dumps({k: v["holdout"] for k, v in row.items() if k.startswith("alpha")}, default=str)[:400], flush=True)
+    # frozen references (original pipeline, no retraining)
+    for name, mdir in (("frozen_A0_v2", "artifacts/models/a0"), ("frozen_pilot_cns_s0", "artifacts/models/pilot_cns/s0")):
+        m = CatBoostClassifier()
+        m.load_model(str(K.ROOT / mdir / "a0.cbm"))
+        cs = 1 - m.predict_proba(F.matrix(ca))[:, 0]
+        hs = 1 - m.predict_proba(F.matrix(h))[:, 0]
+        row = {"model_dir": mdir}
+        for lvl in fs["fpr_levels"]:
+            thr, real = threshold_at_fpr(cs, lvl)
+            row[f"alpha_{lvl}"] = {"threshold": float(thr), "calib_fpr": float(real), "holdout": _holdout_metrics(h, hs, thr)}
+        res["arms"][name] = [row]
+    # pre-registered GO rule
+    def mean(name, lvl, seg, key):
+        return float(np.mean([r[f"alpha_{lvl}"]["holdout"][seg][key] for r in res["arms"][name]]))
+    a1, a2 = fs["fpr_levels"]
+    h3, h4 = "H3_0223_benign", "H4_0221_loicudp"
+    c_h3 = mean("v2", a1, h3, "benign_fpr") <= mean("reference_G0", a1, h3, "benign_fpr") and         mean("v2", a1, h3, "false_incidents_per_hour") <= mean("reference_G0", a1, h3, "false_incidents_per_hour")
+    c_h4 = all(mean("v2", lvl, h4, "attack_recall") >= mean("reference_G0", lvl, h4, "attack_recall") - 0.02
+               for lvl in (a1, a2))
+    res["go_rule"] = {"H3_condition": c_h3, "H4_condition": c_h4, "decision": "GO" if c_h3 and c_h4 else "NO-GO",
+                      "same_spec_as_reference": final_spec == {}}
+    out = K.path(cfg, "derived") / "study" / "FINAL_HOLDOUT.json"
+    out.write_text(json.dumps(res, indent=2, default=str), encoding="utf-8")
+    return res["go_rule"]
