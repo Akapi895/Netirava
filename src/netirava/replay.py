@@ -11,7 +11,7 @@ the policy then walks the events one by one in decision order. Paced mode
 scores tick by tick and sleeps to follow simulated time / speed.
 
 The runtime never reads labels, roles or quality flags: the stream file has
-no label column and contracts.flow_event_batch rejects evaluator columns.
+no label column and features.flow_event_batch rejects evaluator columns.
 """
 
 import datetime as dt
@@ -24,11 +24,9 @@ import pandas as pd
 import psutil
 
 from netirava import config as K
-from netirava import contracts as CT
 from netirava import features as F
 from netirava.dataset import load_stream, window_bounds
-from netirava.detectors.a0 import A0
-from netirava.detectors.anomaly import Anomaly
+from netirava.detectors import A0, Anomaly
 from netirava.policy import Policy
 from netirava.storage import RunStore
 
@@ -40,7 +38,7 @@ def replay_frame(cfg, segments=None):
     order = {w["id"]: i for i, w in enumerate(window_bounds(cfg))}
     s["_seg_order"] = s.segment.map(order)
     s = s.sort_values(["_seg_order", "available_at", "flow_id"], kind="stable").reset_index(drop=True)
-    return CT.flow_event_batch(s.drop(columns=["_seg_order", "role"]))
+    return F.flow_event_batch(s.drop(columns=["_seg_order", "role"]))
 
 
 def score_chunk(X, a0, an, cfg, stats):
@@ -169,7 +167,7 @@ def run(cfg, mode="a0", pace="fast", speed=None, segments=None, max_events=None,
         "a0": {"model_hash": a0.version, "threshold": a0.threshold, "classes": a0.classes},
         "anomaly": ({"model_hash": an.version, "threshold": an.threshold} if an else None),
         "feature_schema": F.FEATURE_SCHEMA_VERSION, "feature_schema_hash": F.schema_hash(),
-        "contracts": CT.SCHEMA_VERSION, "policy": pc, "segments": sorted(set(seg.tolist())),
+        "contracts": F.CONTRACT_VERSION, "policy": pc, "segments": sorted(set(seg.tolist())),
         "events": n, "event_time_span_s": float(span_s), "max_events": max_events,
         "decision_tick_ms": tick, "export_delay_ms": cfg["replay"]["export_delay_ms"],
         "wall_seconds": wall, "wall_a0_s": stats["t_a0"], "wall_shadow_s": stats["t_an"], "wall_policy_s": stats["t_policy"],

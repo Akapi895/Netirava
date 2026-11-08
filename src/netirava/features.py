@@ -59,3 +59,18 @@ def log1p_signed(X):
 
 def fingerprint(df, cols=FEATURES):
     return pd.util.hash_pandas_object(df[cols].astype("float64") + 0.0, index=False).to_numpy(np.uint64)
+
+
+# --------------------------------------------------------------------------- runtime contract
+CONTRACT_VERSION = "netirava-contracts-v1"
+# columns a FlowEvent batch may carry (identifiers are for policy/logging, never model input)
+FLOW_EVENT_COLUMNS = ["flow_id", "segment", TS_START, TS_END, "available_at", SRC, DST] + FEATURES
+FORBIDDEN_IN_RUNTIME = [LABEL, LABEL_BIN, "role", "label_quality", "unknown_to_model", "scenario"]
+
+
+def flow_event_batch(df):
+    """Project a stream frame onto the FlowEvent contract (no labels); fail on evaluator columns."""
+    bad = [c for c in FORBIDDEN_IN_RUNTIME if c in df.columns]
+    if bad:
+        raise ValueError(f"label/evaluator columns reached the runtime: {bad}")
+    return df[FLOW_EVENT_COLUMNS]

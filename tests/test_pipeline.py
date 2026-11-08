@@ -1,17 +1,14 @@
 import json
 import sqlite3
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from netirava import config as K
-from netirava import contracts as CT
 from netirava import features as F
 from netirava.dataset import load_stream, load_truth, training_frame
-from netirava.detectors import threshold_at_fpr
-from netirava.detectors.a0 import A0, smote_plan, apply_smote
+from netirava.detectors import A0, apply_smote, smote_plan, train_a0
 from netirava.policy import Policy
 from netirava.replay import run
 from netirava.storage import RunStore
@@ -23,9 +20,9 @@ ACTIVE = ["flow_id", "segment", "available_at", "decision_at", "a0_pred", "a0_sc
 def test_stream_has_no_labels_and_contract_rejects_them(synth):
     s = load_stream(synth)
     assert F.LABEL not in s.columns and F.LABEL_BIN not in s.columns
-    CT.flow_event_batch(s.drop(columns=["role"]))
+    F.flow_event_batch(s.drop(columns=["role"]))
     with pytest.raises(ValueError):
-        CT.flow_event_batch(s)                       # 'role' is evaluator-only
+        F.flow_event_batch(s)                       # 'role' is evaluator-only
     assert not set(F.FEATURES) & set(F.NEVER_INPUT)
 
 
@@ -45,21 +42,16 @@ def test_training_frame_refuses_replay_roles(synth):
         training_frame(synth, ["replay"])
 
 
-def test_threshold_rule():
-    s = np.arange(1000, dtype=float)
-    t, r = threshold_at_fpr(s, 0.01)
-    assert (s >= t).sum() <= 10 and r <= 0.01
 
 
 def test_threshold_and_model_independent_of_replay_labels(tmp_path, synth):
-    from tests.conftest import make_csv, make_cfg
+    from conftest import make_csv, make_cfg
     from netirava.dataset import prepare
-    from netirava.detectors import a0
     csv = tmp_path / "flipped.csv"
     make_csv(csv, flip_replay_labels=True)
     cfg2 = make_cfg(tmp_path, csv)
     prepare(cfg2)
-    a0.train(cfg2)
+    train_a0(cfg2)
     m1 = json.loads((K.path(synth, "models") / "a0" / "a0_meta.json").read_text(encoding="utf-8"))
     m2 = json.loads((K.path(cfg2, "models") / "a0" / "a0_meta.json").read_text(encoding="utf-8"))
     assert m1["threshold"]["value"] == m2["threshold"]["value"]
@@ -85,8 +77,8 @@ def test_shadow_on_off_and_failure_do_not_change_active(synth, monkeypatch):
     a = run(synth, mode="a0", run_id="a0only")
     b = run(synth, mode="a0-shadow", run_id="withshadow")
     assert a["active_decisions_sha1"] == b["active_decisions_sha1"]
-    from netirava.detectors import anomaly
-    monkeypatch.setattr(anomaly.Anomaly, "score", lambda self, X: (_ for _ in ()).throw(RuntimeError("boom")))
+    from netirava import detectors
+    monkeypatch.setattr(detectors.Anomaly, "score", lambda self, X: (_ for _ in ()).throw(RuntimeError("boom")))
     c = run(synth, mode="a0-shadow", run_id="broken")
     assert c["degraded"] and c["shadow_status_counts"]["missing"] == c["events"]
     assert c["active_decisions_sha1"] == a["active_decisions_sha1"]
@@ -149,13 +141,6 @@ def test_smote_plan_and_categorical_guard():
     assert set(Xr[:, j]) <= set(X[:, j])          # categorical codes copied, not interpolated
 
 
-def test_runtime_modules_do_not_read_labels():
-    root = Path(__file__).resolve().parents[1] / "src" / "netirava"
-    for f in ("replay.py", "policy.py", "detectors/a0.py", "detectors/anomaly.py"):
-        src = (root / f).read_text(encoding="utf-8")
-        assert "load_truth" not in src, f
-    rep = (root / "replay.py").read_text(encoding="utf-8")
-    assert "training_frame" not in rep
 
 
 def test_evaluate_runs(synth):

@@ -73,12 +73,12 @@ def make_cfg(tmp, csv):
 @pytest.fixture(scope="session")
 def synth(tmp_path_factory):
     from netirava.dataset import prepare
-    from netirava.detectors import a0, anomaly
+    from netirava.detectors import train_a0, train_anomaly
     tmp = tmp_path_factory.mktemp("synth")
     csv = tmp / "flows.csv"
     make_csv(csv)
     cfg = make_cfg(tmp, csv)
     prepare(cfg)
-    a0.train(cfg)
-    anomaly.train(cfg)
+    train_a0(cfg)
+    train_anomaly(cfg)
     return cfg

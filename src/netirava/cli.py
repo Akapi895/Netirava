@@ -52,14 +52,14 @@ def main(argv=None):
         m, _ = prepare(cfg)
         _print({k: m[k] for k in ("rows", "rows_by_role", "unknown_to_model_rows", "flagged_label_rows")})
     elif a.cmd == "audit":
-        from netirava.audit import audit
+        from netirava.dataset import audit
         _print(audit(cfg))
     elif a.cmd == "train-a0":
-        from netirava.detectors.a0 import train
-        _print(train(cfg))
+        from netirava.detectors import train_a0
+        _print(train_a0(cfg))
     elif a.cmd == "train-anomaly":
-        from netirava.detectors.anomaly import train
-        _print(train(cfg))
+        from netirava.detectors import train_anomaly
+        _print(train_anomaly(cfg))
     elif a.cmd == "replay":
         from netirava.replay import run
         _print(run(cfg, mode=a.mode, pace=a.pace, speed=a.speed, segments=a.segments, max_events=a.max_events))

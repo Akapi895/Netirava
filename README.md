@@ -1,43 +1,76 @@
-# Netirava MVP
+# Netirava
 
-Một IDS dựa trên **flow đã hoàn tất**, chạy bằng **dataset replay**. Gồm một detector có giám sát (**A0**, CatBoost theo công thức anchor NP-v1, train lại trên CIC-2018) ở chế độ active, và một **IsolationForest** ở chế độ **shadow** (chỉ quan sát). Phản ứng chỉ là mô phỏng (incident/notification); không block, không quarantine, không tự train lại.
+IDS dựa trên **flow đã hoàn tất**, chạy bằng **dataset replay** trên NF-CSE-CIC-IDS2018-v3. Gồm:
+- **A0**: CatBoost theo công thức anchor NP-v1, train lại trên CIC; chạy ở chế độ active.
+- **IsolationForest**: anomaly detector chạy ở chế độ shadow (chỉ quan sát).
 
-- Dataset và subset: [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md)
-- Kiến trúc: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- Model: [`docs/MODEL_CARD_A0.md`](docs/MODEL_CARD_A0.md)
-- Kết quả: [`docs/RESULTS_MVP.md`](docs/RESULTS_MVP.md)
-- Test: [`docs/TEST_REPORT.txt`](docs/TEST_REPORT.txt)
+Phản ứng chỉ là mô phỏng (incident/notification): không block, không quarantine, không tự train lại.
 
-## Cài đặt (Windows, PowerShell)
+| Tài liệu | Nội dung |
+|---|---|
+| [`docs/RESEARCH_FRAMING.md`](docs/RESEARCH_FRAMING.md) | Bài toán, research question, protocol, metric, luật chứng minh |
+| [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) | Subset CIC18-Causal-Demo-v1: cửa sổ, vai trò, support, host overlap, giới hạn |
+| [`docs/MODEL_CARD_A0.md`](docs/MODEL_CARD_A0.md) | A0-CIC |
+| [`docs/RESULTS_MVP.md`](docs/RESULTS_MVP.md) | Kết quả run MVP |
+
+## Cấu trúc
+```text
+configs/demo.yaml        cửa sổ, vai trò, known class, threshold target, policy (chốt trước khi train)
+src/netirava/
+  cli.py                 python -m netirava <command>
+  config.py              load YAML, path, sha1
+  features.py            allowlist 49 feature, transform cố định, fingerprint, runtime contract (không nhãn)
+  dataset.py             inspect / prepare (stream.parquet không nhãn + truth.parquet) / audit
+  detectors.py           A0 (CatBoost) và Anomaly (IsolationForest), threshold trên calibration
+  replay.py              replay causal theo available_at, fast/paced, shadow cô lập
+  policy.py              candidate → incident theo entity, cooldown và budget theo event time
+  storage.py             run.json, detections.parquet, alerts.db (feedback append-only)
+  evaluation.py          evaluator, module duy nhất đọc nhãn
+tests/                   pipeline end-to-end trên dữ liệu tổng hợp
+```
+
+Ngoài git:
+- `datasets/` (dữ liệu gốc, chỉ đọc);
+- `artifacts/` (subset dẫn xuất, model);
+- `runs/` (các run replay).
+
+```mermaid
+flowchart LR
+  CSV[(Raw CSV, read-only)] -->|prepare| S[(stream.parquet, no labels)]
+  CSV -->|prepare| T[(truth.parquet, evaluator only)]
+  S --> R[replay: available_at order, 1 s tick]
+  R --> A0[A0 CatBoost, active] --> P[policy: threshold, cooldown, budget] --> DB[(alerts.db)]
+  R --> AN[IsolationForest, shadow] --> SP[shadow grouping, no budget] --> DB
+  A0 --> D[(detections.parquet)]
+  AN --> D
+  D --> E[evaluate]
+  T --> E
+```
+
+## Ranh giới (đều có test)
+- **Nhãn:** model input chỉ gồm 49 feature trong allowlist (giữ port, TTL, DNS id). Nhãn, role và scenario không bao giờ đi vào runtime; `features.flow_event_batch` từ chối các cột đó.
+- **Threshold và model chỉ học từ train/calibration:** đảo nhãn của dữ liệu replay không làm đổi threshold hay prediction.
+- **Prefix invariance:** prefix của stream cho kết quả giống hệt khi chạy cả stream. Thay đổi chunk size, hay chạy paced thay vì fast, không làm đổi kết quả.
+- **Shadow cô lập:** bật/tắt shadow, kể cả khi shadow lỗi, đều cho cùng `active_decisions_sha1`. Lỗi shadow làm run được đánh dấu `degraded`.
+- **Ngữ nghĩa score:** `attack_score = 1 − p(Benign)` là score để ra quyết định, không phải xác suất đã calibration. Không có fusion giữa hai nhánh.
+
+## Cài đặt và chạy (Windows, PowerShell)
 ```powershell
 cd D:\Downloads\DataNova\Netirava
-uv sync                       # Python 3.12; versions pinned in pyproject.toml / uv.lock
+uv sync
 .venv\Scripts\python.exe -m pytest -q
-```
-- Dataset gốc nằm ở `datasets/` (ngoài git, chỉ đọc); đường dẫn khai báo trong `configs/demo.yaml`.
-- Dữ liệu dẫn xuất, model và run nằm trong `artifacts/` và `runs/` (ngoài git).
-- A0 kế thừa `../experiments/nextphase/configs.yaml` (NP-v1) nếu file đó tồn tại.
 
-## Các lệnh đã chạy thật (2026-11-08)
-```powershell
 $py = ".venv\Scripts\python.exe"
-& $py -m netirava inspect --config configs/demo.yaml          # 77 s: sha1, schema, hourly class counts
-& $py -m netirava prepare --config configs/demo.yaml          # 74 s: 2,973,401 flows -> stream/truth/manifest
-& $py -m netirava audit   --config configs/demo.yaml          # host overlap, fingerprint overlap, collisions
-& $py -m netirava train-a0 --config configs/demo.yaml         # GPU, ~15 s fit; threshold on calibration
-& $py -m netirava replay --config configs/demo.yaml --mode a0
-& $py -m netirava train-anomaly --config configs/demo.yaml    # IsolationForest on train benign (200k sample)
-& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow
+& $py -m netirava inspect  --config configs/demo.yaml      # sha1, schema, hourly class counts
+& $py -m netirava prepare  --config configs/demo.yaml      # windows -> stream/truth/manifest
+& $py -m netirava audit    --config configs/demo.yaml      # host / fingerprint overlap, collisions
+& $py -m netirava train-a0 --config configs/demo.yaml      # GPU; threshold on calibration benign
+& $py -m netirava train-anomaly --config configs/demo.yaml
+& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow            # fast
 & $py -m netirava replay --config configs/demo.yaml --mode a0-shadow --pace paced --speed 60 --segments R1_0302_bot --max-events 30000
-& $py -m netirava evaluate --run 20261108T110215_a0-shadow_fast
-& $py -m netirava incidents --run 20261108T110255_a0_fast --limit 5
-& $py -m netirava feedback --run 20261108T110255_a0_fast --alert-id 1 --status true_positive --source agent --confirmed-by demo-operator --corrects 2 --provenance demo
+& $py -m netirava evaluate  --run <run_id>
+& $py -m netirava incidents --run <run_id> --limit 5
+& $py -m netirava feedback  --run <run_id> --alert-id 1 --status true_positive --source analyst --confirmed-by <name>
 ```
-- Mỗi lệnh `replay` tạo một run mới, `runs/<run_id>/`, gồm `run.json`, `detections.parquet` và `alerts.db`. Đây cũng là cách resume duy nhất: chạy lại thành run mới, không skip theo file đã tồn tại.
-- `evaluate` ghi `EVALUATION.json` và `episodes.csv` vào thư mục của run.
-
-## Ranh giới
-- **Model input:** 49 feature trong allowlist (giữ port, TTL, DNS id). Không bao giờ dùng IP, timestamp tuyệt đối, nhãn, role hay scenario.
-- **Nhãn** chỉ nằm trong `truth.parquet` và chỉ được đọc bởi `evaluation`/`audit`.
-- **`attack_score = 1 − p(Benign)`** là score để ra quyết định, không phải xác suất đã calibration.
-- **Shadow** không ảnh hưởng tới quyết định active (có test). Không có fusion giữa hai nhánh.
+- Mỗi lần `replay` tạo một run mới tại `runs/<run_id>/`; đây cũng là cách resume duy nhất (không skip theo file đã tồn tại).
+- A0 kế thừa `../experiments/nextphase/configs.yaml` (NP-v1) nếu file đó tồn tại.

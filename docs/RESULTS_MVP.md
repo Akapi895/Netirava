@@ -74,7 +74,7 @@ Với Bot, cả 70 notification trong 5 giờ đều là báo động sai trên 
   - audit;
   - A0-CIC và model card; anomaly model;
   - replay fast và paced; shadow; evaluate; feedback (append-only, có correction);
-  - 14 test (`docs/TEST_REPORT.txt`).
+  - 14 test lúc chạy MVP (sau khi dọn repo còn 12 test trong `tests/`).
 - **Chưa làm:**
   - không có feature ngữ cảnh hay rolling statistics;
   - không đo export delay thật;

@@ -1,17 +1,20 @@
-"""A0-CIC: the NP-v1 CatBoost anchor recipe re-fitted on CIC known classes.
+"""Detectors.
 
-Not the UNSW checkpoint: a new model with its own class map. Inherits from
-the NP-v1 config (experiments/nextphase/configs.yaml) when it is present:
-base params (Plain, border_count 254, 1000 iterations, other defaults),
-device and lr_rule cpu_auto_probe; SMOTE rule "classes with < 1000 training
-rows -> 1000". Every deviation is recorded in the model metadata.
+A0-CIC (active): the NP-v1 CatBoost anchor recipe re-fitted on CIC known
+classes (new model, own class map; not the UNSW checkpoint). Inherits base
+params, device and lr_rule cpu_auto_probe from experiments/nextphase/configs.yaml
+when present; SMOTE rule "classes with < 1000 training rows -> 1000" (SMOTENC).
+Outputs: predicted known class, full probability vector, attack_score =
+1 - p(Benign) (a decision score, not a calibrated probability).
 
-Outputs per flow: predicted known class, full probability vector,
-attack_score = 1 - p(Benign) (a decision score, not a calibrated probability).
+Anomaly (shadow): IsolationForest fitted on TRAIN benign flows; score =
+-score_samples (higher = more anomalous); predict() is never used.
+
+Thresholds of both are chosen on CALIBRATION benign flows only.
 """
 
-import hashlib
 import json
+import pickle
 import time
 from pathlib import Path
 
@@ -20,8 +23,29 @@ import yaml
 
 from netirava import config as K
 from netirava import features as F
-from netirava.detectors import threshold_at_fpr, wilson
 
+def threshold_at_fpr(benign_scores, target_fpr):
+    """Smallest threshold t such that the share of benign scores >= t is <= target.
+    Alerting rule everywhere: score >= t. Returns t and the realised share."""
+    s = np.sort(np.asarray(benign_scores, float))[::-1]
+    n = len(s)
+    k = int(np.floor(target_fpr * n))           # number of benign allowed at or above t
+    t = float(np.nextafter(s[k], np.inf)) if k < n else float(s[-1])
+    realised = float((s >= t).mean())
+    return t, realised
+
+
+def wilson(k, n, z=1.96):
+    if n == 0:
+        return [None, None]
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return [float(max(0.0, c - h)), float(min(1.0, c + h))]
+
+
+# ------------------------------------------------------------ A0
 BENIGN = "Benign"
 
 
@@ -113,7 +137,7 @@ class A0:
         return A0(m, meta["classes"], meta["threshold"]["value"], meta)
 
 
-def train(cfg):
+def train_a0(cfg):
     from catboost import CatBoostClassifier
     from netirava.dataset import training_frame
     t0 = time.perf_counter()
@@ -201,3 +225,59 @@ def write_model_card(meta, path):
         "- Deviations from NP-v1: " + "; ".join(meta["deviations_from_np_v1"]),
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+# ------------------------------------------------------------ anomaly
+class Anomaly:
+    def __init__(self, model, threshold, meta):
+        self.model, self.threshold, self.meta = model, float(threshold), meta
+        self.version = meta["model_hash"]
+
+    def score(self, X):
+        return -self.model.score_samples(F.log1p_signed(X))
+
+    @staticmethod
+    def load(path):
+        with open(path / "anomaly.pkl", "rb") as f:
+            m = pickle.load(f)
+        meta = json.loads((path / "anomaly_meta.json").read_text(encoding="utf-8"))
+        return Anomaly(m, meta["threshold"]["value"], meta)
+
+
+def train_anomaly(cfg):
+    from sklearn.ensemble import IsolationForest
+    from netirava.dataset import training_frame
+    c = cfg["anomaly"]
+    t0 = time.perf_counter()
+    tr = training_frame(cfg, ["train"])
+    ben = tr[tr[F.LABEL] == "Benign"].sort_values("row_id")
+    n_avail = len(ben)
+    if n_avail > c["max_train_rows"]:
+        rng = np.random.default_rng(0)
+        ben = ben.iloc[np.sort(rng.choice(n_avail, c["max_train_rows"], replace=False))]
+    X = F.log1p_signed(F.matrix(ben))
+    m = IsolationForest(n_estimators=c["n_estimators"], max_samples=c["max_samples"], contamination=c["contamination"],
+                        random_state=c["random_state"], n_jobs=c["n_jobs"])
+    m.fit(X)
+    out = K.path(cfg, "models") / "anomaly"
+    out.mkdir(parents=True, exist_ok=True)
+    with open(out / "anomaly.pkl", "wb") as f:
+        pickle.dump(m, f)
+    cal = training_frame(cfg, ["calibration"])
+    cb = cal[F.LABEL].to_numpy() == "Benign"
+    s = -m.score_samples(F.log1p_signed(F.matrix(cal)))
+    thr, realised = threshold_at_fpr(s[cb], c["target_fpr"])
+    nb = int(cb.sum())
+    meta = {"detector": "anomaly", "model_hash": K.sha1_file(out / "anomaly.pkl")[:12],
+            "algorithm": "sklearn IsolationForest", "params": {k: c[k] for k in ("n_estimators", "max_samples", "contamination", "random_state", "n_jobs")},
+            "train_rows": int(len(ben)), "train_benign_available": int(n_avail),
+            "sampling": f"uniform without replacement, numpy seed 0, cap {c['max_train_rows']} (train-role benign rows, source labels)",
+            "transform": "sign(x)*log1p(|x|) on the 49 allowlisted features (fixed, not learned)",
+            "score": "-score_samples (higher = more anomalous); predict() not used",
+            "threshold": {"value": thr, "target_fpr": c["target_fpr"], "realised_fpr_calibration": realised,
+                          "n_benign_calibration": nb, "wilson95": wilson(int(round(realised * nb)), nb),
+                          "uncertain": bool(nb < 10 / c["target_fpr"])},
+            "feature_schema_hash": F.schema_hash(), "fit_seconds": time.perf_counter() - t0,
+            "sklearn_version": __import__("sklearn").__version__, "config_sha1": cfg["_sha1"]}
+    (out / "anomaly_meta.json").write_text(json.dumps(meta, indent=2))
+    return meta
