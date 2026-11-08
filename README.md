@@ -1,67 +1,72 @@
 # Netirava
 
-IDS chạy trên **flow đã hoàn tất** (NF-CSE-CIC-IDS2018-v3), dùng **dataset replay**:
-- **CatBoost A0** quyết định attack hay benign tại một threshold đã khóa;
-- **nhãn family-aware** (không phát lớp mịn khi Web/XSS/SQLi mơ hồ);
-- **gom incident**, **correlation theo campaign** (nhiều nguồn → cùng đích, cùng họ) và **giao diện triage Streamlit**;
-- **drift monitor** không cần nhãn, báo khi threshold đã khóa có thể không còn giữ được FPR mục tiêu;
-- **IsolationForest** chạy ở chế độ shadow.
+Netirava là IDS chạy trên flow NetFlow v3 đã hoàn tất (NF-CSE-CIC-IDS2018-v3), đánh giá bằng dataset replay, cho đề DN-CY-01 của DataNovathon 2026: *Network Intrusion Detection with Imbalanced Threat Data*.
 
-Phản ứng chỉ là mô phỏng. Dự án nộp cho DataNovathon 2026, đề DN-CY-01.
+Giải pháp có ba thành phần:
+1. **Minority-aware detection:** CatBoost 8 known class (gồm Web, XSS, SQLi), SMOTE theo quy tắc, nhãn sửa CNS2022 trong file riêng, threshold khóa trên cửa sổ calibration.
+2. **Family-aware classification:** luôn trả họ tấn công; chỉ trả lớp mịn khi đủ tin cậy.
+3. **Incident triage UI (Streamlit):** gom alert thành incident có budget, hàng xem xét theo severity, view campaign (thử nghiệm), chỉ báo drift không cần nhãn, feedback append-only.
 
-| Tài liệu | Nội dung |
-|---|---|
-| [`docs/FINAL_SOLUTION_ARCHITECTURE.md`](docs/FINAL_SOLUTION_ARCHITECTURE.md) · [`CURRENT_LIMITATIONS.md`](docs/CURRENT_LIMITATIONS.md) · [`FINAL_COMPLETION_PLAN.md`](docs/FINAL_COMPLETION_PLAN.md) | **Giải pháp đã chốt** (3 thành phần), toàn bộ hạn chế, checklist hoàn thiện |
-| [`docs/OPS_STUDY_PREREG.md`](docs/OPS_STUDY_PREREG.md) · [`OPS_STUDY_RESULTS.md`](docs/OPS_STUDY_RESULTS.md) | **Incident correlation + drift monitoring**: RQ, protocol khóa trước, holdout mới H5–H9, kết quả và quyết định GO/NO-GO |
-| [`docs/EDA_REPORT.md`](docs/EDA_REPORT.md) · [`PREPROCESSING_SPEC.md`](docs/PREPROCESSING_SPEC.md) · [`FEATURE_EVALUATION.md`](docs/FEATURE_EVALUATION.md) · [`FE_HOLDOUT_RESULTS.md`](docs/FE_HOLDOUT_RESULTS.md) | EDA, preprocessing, đánh giá feature, holdout mới H3/H4 |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Pipeline, ranh giới module, contract dữ liệu, bất biến |
-| [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md) (+ [bản sinh tự động](docs/EXPERIMENT_REGISTRY.generated.md)) | Mọi thí nghiệm: loại bằng chứng (DEV / EXP / HO), artifact, lệnh, commit |
-| [`docs/RESULTS_FINAL.md`](docs/RESULTS_FINAL.md) + [`docs/RESULTS_FINAL_ADDENDUM.md`](docs/RESULTS_FINAL_ADDENDUM.md) | Kết quả trên nhãn gốc; addendum về lỗi nhãn NF-v3 |
-| [`docs/FAMILY_AWARE_FINAL_REPORT.md`](docs/FAMILY_AWARE_FINAL_REPORT.md) | Family-aware: implementation, test, metric, giới hạn |
-| [`docs/CORRECTED_LABEL_AUDIT.md`](docs/CORRECTED_LABEL_AUDIT.md) · [`CORRECTED_LABEL_PILOT_RESULTS.md`](docs/CORRECTED_LABEL_PILOT_RESULTS.md) · [`DATA_SUFFICIENCY_DECISION.md`](docs/DATA_SUFFICIENCY_DECISION.md) | Nhãn sửa theo CNS2022, pilot, quyết định về dữ liệu |
-| [`docs/FP_LABEL_FORENSICS.md`](docs/FP_LABEL_FORENSICS.md) · [`MINORITY_INFORMATION_AUDIT.md`](docs/MINORITY_INFORMATION_AUDIT.md) · [`SOTA_METHOD_REVIEW.md`](docs/SOTA_METHOD_REVIEW.md) | Forensics FP và nhãn, giới hạn thông tin, review paper |
-| [`docs/RESEARCH_FRAMING.md`](docs/RESEARCH_FRAMING.md) · [`DATASET_CARD.md`](docs/DATASET_CARD.md) · [`MODEL_CARD_A0_v2.md`](docs/MODEL_CARD_A0_v2.md) | Đề bài và RQ; subset; model card |
-| [`docs/RESULTS_MVP.md`](docs/RESULTS_MVP.md) · [`RESULTS_DECISION.md`](docs/RESULTS_DECISION.md) · [`docs/history/`](docs/history/) | Kết quả lịch sử (MVP; decision layer và holdout DDoS) và các tài liệu đã bị thay thế |
-| [`docs/CLEANUP_MANIFEST.md`](docs/CLEANUP_MANIFEST.md) | Thay đổi cấu trúc repo |
+Phản ứng chỉ là mô phỏng. Netirava không claim SOTA, zero-day detection hay IPS.
+
+## Kết quả chính
+Chi tiết và nguồn của từng số: [`docs/08_final_report.md`](docs/08_final_report.md).
+
+| Kết quả | Số | Loại bằng chứng |
+|---|---|---|
+| Nhãn web của NF-v3 phần lớn sai | 6.9% flow web là tấn công thật | Forensics |
+| FPR ở mục tiêu 0.1% trên ngày chưa từng chạm | 0.007–0.052% (H3); 0.026–0.127% (H5–H9) | Holdout |
+| SMOTE so với không xử lý mất cân bằng | Rare macro-F1 giảm khi bỏ SMOTE ở cả 3 seed | DEV |
+| Model train trên nhãn sửa so với nhãn gốc | FPR 0.065% so với 0.085%; HOIC 0.81 so với 0.04; Infiltration 0.012 so với 0.194 | Holdout |
+| Family-aware | Nhãn mịn sai 344 → 52, không đổi alert | DEV |
+| Gom incident | Nén 243–1,024 lần | DEV/EXP |
+| Correlation theo campaign | 46 → 5 mục/giờ trên HOIC, nhưng gộp nhầm 7% incident benign: NO-GO | Holdout |
+| Drift monitor | Chưa đủ bằng chứng (INCONCLUSIVE); chỉ hiển thị như chỉ báo | DEV + holdout |
 
 ## Cài đặt
 ```powershell
-cd D:\Downloads\DataNova\Netirava
-uv sync                                   # Python 3.12; versions pinned in uv.lock
-.venv\Scripts\python.exe -m pytest -q     # 36 tests
+uv sync                                    # Python 3.12, phiên bản khóa trong uv.lock
+.venv\Scripts\python.exe -m pytest -q      # 36 test
 ```
-- **Ngoài git:** `datasets/` (CSV gốc, chỉ đọc), `artifacts/` (subset dẫn xuất, model), `runs/` (các run).
-- **A0** kế thừa công thức NP-v1 từ `../experiments/nextphase/configs.yaml`.
+Ngoài git: `datasets/` (CSV gốc, chỉ đọc), `artifacts/` (subset, model), `runs/` (các run). Công thức A0 kế thừa từ `../experiments/nextphase/configs.yaml`.
 
 ## Demo
 ```powershell
 $py = ".venv\Scripts\python.exe"
-& $py -m netirava replay --config configs/demo.yaml --mode a0                       # final model: pilot_cns/s0 (final_system.model_dir)
-& $py -m netirava ui --run <run_id>                                                 # http://localhost:8501
-& $py -m netirava export --run <run_id>                                             # runs/<run_id>/export/
-& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow --model a0     # baseline A0 v2 (+ shadow), as in earlier reports
-& $py -m netirava drift-reference --model pilot_cns/s0                               # once per model (C1 reference)
-& $py -m netirava drift-monitor --run <run_id>                                       # tab "Threshold reliability" in the UI
+& $py -m netirava replay --config configs/demo.yaml --mode a0                 # model: final_system.model_dir (hiện là pilot_cns/s0)
+& $py -m netirava replay --config configs/demo.yaml --mode a0 --model a0      # baseline A0 v2
+& $py -m netirava drift-reference --model pilot_cns/s0                        # một lần cho mỗi model
+& $py -m netirava drift-monitor --run <run_id>                                # tab "Threshold reliability"
+& $py -m netirava ui --run <run_id>                                           # http://localhost:8501
+& $py -m netirava export --run <run_id>                                       # runs/<run_id>/export/
 ```
 
-Ops study (tái lập toàn bộ incident correlation + drift monitoring):
+## Ops study (correlation và drift monitor)
 ```powershell
 & $py -m netirava ops-study --runs <a0_dev_run> <pilot_dev_run> --tag dev
 & $py -m netirava prepare --config configs/ops_holdout.yaml; & $py -m netirava relabel --config configs/ops_holdout.yaml
-& $py -m netirava replay --config configs/ops_holdout.yaml --mode a0 --model a0 --unlock-holdout   # and --model pilot_cns/s0
+& $py -m netirava replay --config configs/ops_holdout.yaml --mode a0 --model a0 --unlock-holdout   # và --model pilot_cns/s0
 & $py -m netirava ops-study --config configs/ops_holdout.yaml --runs <a0_ho_run> <pilot_ho_run> --tag holdout
 & $py -m netirava ops-go --config configs/ops_holdout.yaml --tag holdout
 & $py -m netirava ops-pool --tags dev holdout --out pooled; & $py -m netirava ops-summary --tag holdout
 ```
 
-## Toàn bộ lệnh CLI
-`inspect` · `prepare` · `audit` · `relabel` · `train-a0 [--variant a0|a1|a2] [--seed N]` · `train-anomaly` · `score-calibration` · `replay [--mode a0|a0-shadow] [--pace fast|paced] [--model DIR] [--segments …] [--max-events N] [--unlock-holdout]` · `evaluate --run` · `decide --run [--select] [--unlock-holdout]` · `family-report --run [--segments …]` · `export --run` · `eda` · `fe-study` · `fe-final` · `ablate-imbalance` · `minority-report` · `pilot-train` · `pilot-eval` · `registry` · `incidents --run` · `feedback --run --alert-id --status [--provenance]` · `ui --run` · `drift-reference [--model]` · `drift-monitor --run` · `ops-study --runs … --tag` · `ops-go --tag` · `ops-pool --tags … --out` · `ops-summary --tag [--labels]`
+## Lệnh CLI
+`inspect` · `prepare` · `audit` · `relabel` · `eda` · `fe-study` · `fe-final` · `train-a0 [--variant a0|a1|a2] [--seed N]` · `train-anomaly` · `score-calibration` · `ablate-imbalance` · `minority-report` · `pilot-train` · `pilot-eval` · `replay [--mode a0|a0-shadow] [--pace fast|paced] [--model DIR] [--segments …] [--max-events N] [--unlock-holdout]` · `evaluate --run` · `decide --run [--select] [--unlock-holdout]` · `family-report --run` · `export --run` · `incidents --run` · `feedback --run --alert-id --status` · `ui --run` · `drift-reference` · `drift-monitor --run` · `ops-study` · `ops-go` · `ops-pool` · `ops-summary` · `registry`
 
-Mỗi lần `replay` tạo một run mới `runs/<run_id>/` gồm `run.json`, `detections.parquet` và `alerts.db`. Cách tái lập từng thí nghiệm có trong [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md).
+Mỗi `replay` tạo `runs/<run_id>/` gồm `run.json`, `detections.parquet` và `alerts.db`.
+
+## Cấu trúc
+```
+configs/   demo.yaml (subset chính), fe_study.yaml, ops_holdout.yaml
+src/netirava/   pipeline, detector, family-aware, triage, campaign, drift, evaluator, CLI, UI
+tests/     test_pipeline.py, test_fe.py, test_ops.py
+docs/      tài liệu (mục lục ở docs/README.md)
+research/pcap_feasibility/   nghiên cứu PCAP (đã dừng)
+```
 
 ## Phạm vi claim
-- Chỉ là replay flow đã hoàn tất trong một testbed: **development evidence**.
-- Kết quả trên **holdout** (H1 DDoS, H2 DoS-Hulk; H3/H4 của FE study; H5–H9 của ops study) được đánh dấu riêng.
-- Correlation và drift monitor **không** giảm FPR và không phát hiện thêm attack flow; chúng chỉ đổi đơn vị xem xét và cảnh báo độ tin cậy của threshold.
-- Nhãn NF-v3 có lỗi đã được xác định (xem forensics); mọi báo cáo đều ghi rõ dùng nhãn gốc hay nhãn đã sửa.
-- Không phải SOTA, không phải zero-day detection, không phải IPS.
+- Replay flow đã hoàn tất trong một testbed; mỗi lớp tấn công chỉ có một episode.
+- Kết quả holdout (H1–H9) được đánh dấu riêng; mọi holdout đã dùng.
+- Mọi bảng ghi rõ nhãn gốc NF-v3 hay nhãn sửa CNS2022.
+- Correlation và drift monitor không giảm FPR và không phát hiện thêm flow tấn công.

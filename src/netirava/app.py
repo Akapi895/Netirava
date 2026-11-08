@@ -4,10 +4,10 @@
 
 Tab "Review queue": active (A0) alerts of one replay run as review items. The unit is either a
 source incident (source IP + 15-min cooldown, same rule as the evaluation) or a campaign (source
-incidents linked by target host + predicted family, docs/OPS_STUDY_PREREG.md §3). Items are ranked
+incidents linked by target host + predicted family, docs/protocols/ops_study_prereg.md §3). Items are ranked
 per hour (top-B review queue) by family-aware severity or volume. `notified` is the runtime FIFO
 budget decision and is shown apart from the queue rank.
-Tab "Threshold reliability": the label-free drift monitor (docs/OPS_STUDY_PREREG.md §4).
+Tab "Threshold reliability": the label-free drift monitor (docs/protocols/ops_study_prereg.md §4).
 Analyst-facing: no ground-truth label is read here. Feedback is appended to alerts.db (append-only).
 """
 
@@ -150,7 +150,7 @@ def monitor_tab(cfg, run_id, meta):
                     "F_PSI_median", "F_PSI_n_major", "F_PSI_top"]], width="stretch", hide_index=True)
     st.caption("TR = flows just below the threshold vs the calibration window (ratio); AR = alerted flows vs alpha; "
                "S_PSI / F_PSI = score / feature distribution change (PSI). FPR_est = alpha x TR, NOT validated as an FPR "
-               "estimate (docs/OPS_STUDY_RESULTS.md). Alarms fire mostly on windows that contain attacks.")
+               "estimate (docs/07_drift_monitoring.md). Alarms fire mostly on windows that contain attacks.")
 
 
 def main():

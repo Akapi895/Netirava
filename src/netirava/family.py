@@ -1,7 +1,7 @@
 """Family-aware labelling: the single implementation used by replay, export,
 evaluation and the triage UI.
 
-Contract (see docs/FAMILY_AWARE_FINAL_REPORT.md):
+Contract (see docs/05_family_aware.md):
 - The probability vector is never modified, so p(Benign), every family mass
   and the binary alert (attack_score = 1 - p(Benign) vs the locked threshold)
   are unchanged. Family-aware never turns Benign into Attack or vice versa.

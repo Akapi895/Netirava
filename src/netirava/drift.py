@@ -1,5 +1,5 @@
 """Drift / threshold-reliability monitor (runtime side, label-free). Pre-registered in
-docs/OPS_STUDY_PREREG.md §4.
+docs/protocols/ops_study_prereg.md §4.
 
 Reference = the calibration window (C1) scored by the same model, i.e. the data on which the
 alert threshold was locked. Per 15-min event-time window of a replay run, four signals:

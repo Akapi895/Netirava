@@ -1,5 +1,5 @@
 """Ops study: incident correlation (campaign.py), drift monitor (drift.py), evaluator (ops.py), UI smoke.
-Invariants pre-registered in docs/OPS_STUDY_PREREG.md §6."""
+Invariants pre-registered in docs/protocols/ops_study_prereg.md §6."""
 
 import copy
 

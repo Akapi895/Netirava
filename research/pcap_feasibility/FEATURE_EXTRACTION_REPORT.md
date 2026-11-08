@@ -71,7 +71,7 @@ Script: `scripts/cic2018_join_check.py` · Kết quả: `results/cic2018_join_ch
   - Benign, Brute_Force_-Web và SQL_Injection: **100%** join được;
   - **Brute_Force_-XSS: 4.2%** (20/480), và 20 flow join được đều là **DHCP (.28 → .1:67)**.
   - 460 flow "XSS" không join được đến từ hai IP AWS (`52.14.77.172`, `13.58.42.57`), đích chủ yếu là **port 500 (IKE)**. Pcap của web server không có packet nào của chúng, dù nằm trong đúng khung giờ.
-  - Điều này **xác nhận độc lập** kết luận của `docs/FP_LABEL_FORENSICS.md`: nhãn XSS trên host này không phải lưu lượng HTTP tấn công.
+  - Điều này **xác nhận độc lập** kết luận của `docs/02_data_eda_labels.md`: nhãn XSS trên host này không phải lưu lượng HTTP tấn công.
 - **Kết luận:** về kỹ thuật, có thể trích B cho các flow NF-v3 của web server. Ngân sách khá nhỏ (9.6 MB cho một host-ngày), nhưng nhãn web vẫn là nút thắt chính.
 
 ## 5. Coverage và giá trị thiếu (IoT-23, 36,757 flow)

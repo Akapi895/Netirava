@@ -1,6 +1,6 @@
 # Netirava MVP demo config — CIC18-Causal-Demo-v1. Paths are relative to the repo root.
 # Windows, roles, known classes, thresholds targets and policy parameters were fixed from
-# `inspect` support counts BEFORE any model was trained (see docs/DATASET_CARD.md).
+# `inspect` support counts BEFORE any model was trained (see docs/02_data_eda_labels.md).
 dataset:
   name: NF-CSE-CIC-IDS2018-v3
   sha1: ddcad6d826b73a128a447a0189137efd6c8f70c9     # bagit manifest of the shipped CSV
@@ -112,7 +112,7 @@ family:                                     # family-aware labelling (src/netira
   ambiguous: {Web: [Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]}
   tau: 0.8                                  # fine web label only if its share of the Web family mass >= tau
   severity: {Web: 4}                        # severity of an UNCERTAIN incident = its family's, never the withheld fine class (fixes L-4.4)
-ops:                                        # ops study (2026-11-08), pre-registered in docs/OPS_STUDY_PREREG.md before any code or score
+ops:                                        # ops study (2026-11-08), pre-registered in docs/protocols/ops_study_prereg.md before any code or score
   correlation:                              # campaign = source incidents linked by (target host, predicted family), causal, no merging
     key: [dst, family]                      # primary (frozen)
     ablation_keys: [[dst]]                  # reported, never selected
@@ -140,7 +140,7 @@ ops:                                        # ops study (2026-11-08), pre-regist
     cat_top_k: 20
     go_rules: {spearman_min: 0.5, recall_min: 0.8, false_alarm_max: 0.2, min_events: 5}
   model_rule: {incident_ratio_max: 1.5, hoic_recall_margin: 0.05}   # RQ-M: recommend pilot_cns/s0 only if all hold
-  # Decisions applied after the one-time holdout run (docs/OPS_STUDY_RESULTS.md, runs/ops_study/holdout/GO.json):
+  # Decisions applied after the one-time holdout run (docs/06_triage_correlation.md, docs/07_drift_monitoring.md, runs/ops_study/holdout/GO.json):
   ui_default_unit: source incident          # RQ-C NO-GO (G3 contamination 5.1-7.0% > 5%): campaigns stay an experimental view
   ui_campaign_note: "Experimental view: NO-GO on the ops holdout (5-7% of benign source incidents were merged into attack campaigns, limit 5%)."
   ui_monitor_note: "Label-free distribution-change indicator vs the calibration window (where the threshold was locked). Not an FPR estimate: on the holdout, the tail ratio tracked realized FPR only for the pilot model (Spearman 0.56) and the alarm recall is inconclusive (< 5 windows exceeded 2x the target FPR). It never changes an alert."

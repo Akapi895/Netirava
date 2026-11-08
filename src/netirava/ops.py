@@ -1,4 +1,4 @@
-"""Ops study evaluator (docs/OPS_STUDY_PREREG.md): incident correlation (RQ-C), drift monitoring
+"""Ops study evaluator (docs/protocols/ops_study_prereg.md): incident correlation (RQ-C), drift monitoring
 (RQ-D) and the model comparison on fresh holdouts (RQ-M). This is the only ops module that reads
 labels; the runtime parts (campaign.py, drift.py) are label-free.
 
