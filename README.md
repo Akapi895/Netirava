@@ -10,6 +10,7 @@ Phản ứng chỉ là mô phỏng. Dự án nộp cho DataNovathon 2026, đề 
 
 | Tài liệu | Nội dung |
 |---|---|
+| [`docs/FINAL_SOLUTION_ARCHITECTURE.md`](docs/FINAL_SOLUTION_ARCHITECTURE.md) · [`CURRENT_LIMITATIONS.md`](docs/CURRENT_LIMITATIONS.md) · [`FINAL_COMPLETION_PLAN.md`](docs/FINAL_COMPLETION_PLAN.md) | **Giải pháp đã chốt** (3 thành phần), toàn bộ hạn chế, checklist hoàn thiện |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Pipeline, ranh giới module, contract dữ liệu, bất biến |
 | [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md) (+ [bản sinh tự động](docs/EXPERIMENT_REGISTRY.generated.md)) | Mọi thí nghiệm: loại bằng chứng (DEV / EXP / HO), artifact, lệnh, commit |
 | [`docs/RESULTS_FINAL.md`](docs/RESULTS_FINAL.md) + [`docs/RESULTS_FINAL_ADDENDUM.md`](docs/RESULTS_FINAL_ADDENDUM.md) | Kết quả trên nhãn gốc; addendum về lỗi nhãn NF-v3 |
