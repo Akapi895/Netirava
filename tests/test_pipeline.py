@@ -147,3 +147,20 @@ def test_evaluate_runs(synth):
     from netirava.evaluation import evaluate
     s = evaluate(synth, "withshadow")
     assert "unknown-bot" in s and "known-within-episode" in s
+
+
+def test_decision_layer_calibration_and_causal_evidence(synth):
+    from netirava.decision import score_calibration, calibrate, apply, entity_evidence
+    cal = score_calibration(synth)
+    for alpha in (0.01, 0.05):
+        t = calibrate(cal, alpha, 300000, 0.05)
+        for name, al in apply(cal, t).items():
+            assert al[cal.is_benign.to_numpy()].mean() <= alpha + 1e-12, name
+    # evidence of a prefix does not depend on later flows
+    d = cal.sort_values("decision_at").reset_index(drop=True)
+    flag = d.an_score.to_numpy() >= np.quantile(d.an_score, 0.9)
+    full = entity_evidence(d, flag, 300000)
+    da = d.decision_at.to_numpy()
+    k = int(np.searchsorted(da, da[len(d) // 2], side='right'))   # cut at a tick boundary
+    pre = entity_evidence(d.iloc[:k].reset_index(drop=True), flag[:k], 300000)
+    assert (full[:k] == pre).all()

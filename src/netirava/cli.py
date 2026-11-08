@@ -14,7 +14,7 @@ def _print(obj):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="netirava")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit"):
+    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration"):
         p = sub.add_parser(name)
         p.add_argument("--config", default="configs/demo.yaml")
     p = sub.add_parser("replay")
@@ -24,6 +24,12 @@ def main(argv=None):
     p.add_argument("--speed", type=float, default=None)
     p.add_argument("--segments", nargs="*", default=None)
     p.add_argument("--max-events", type=int, default=None)
+    p.add_argument("--unlock-holdout", action="store_true", help="include the final holdout (only after the method is frozen)")
+    p = sub.add_parser("decide")
+    p.add_argument("--run", required=True)
+    p.add_argument("--select", action="store_true", help="choose V4 (W, rho) on development scenarios")
+    p.add_argument("--unlock-holdout", action="store_true")
+    p.add_argument("--config", default="configs/demo.yaml")
     p = sub.add_parser("evaluate")
     p.add_argument("--run", required=True)
     p.add_argument("--config", default="configs/demo.yaml")
@@ -62,7 +68,20 @@ def main(argv=None):
         _print(train_anomaly(cfg))
     elif a.cmd == "replay":
         from netirava.replay import run
-        _print(run(cfg, mode=a.mode, pace=a.pace, speed=a.speed, segments=a.segments, max_events=a.max_events))
+        _print(run(cfg, mode=a.mode, pace=a.pace, speed=a.speed, segments=a.segments, max_events=a.max_events,
+                   unlock_holdout=a.unlock_holdout))
+    elif a.cmd == "score-calibration":
+        from netirava.decision import score_calibration
+        _print({"rows": len(score_calibration(cfg))})
+    elif a.cmd == "decide":
+        from netirava import decision as D
+        if a.select:
+            _print(D.select_v4(cfg, a.run))
+        else:
+            name = "DECISIONS_holdout.json" if a.unlock_holdout else "DECISIONS_dev.json"
+            r = D.evaluate_run(cfg, a.run, unlock_holdout=a.unlock_holdout, out_name=name)
+            _print({k: {s: {v: (m.get("attack_recall"), m["benign_fpr"]) for v, m in x.items()}
+                        for s, x in lv["scenarios"].items()} for k, lv in r["levels"].items()})
     elif a.cmd == "evaluate":
         from netirava.evaluation import evaluate
         _print(evaluate(cfg, a.run))

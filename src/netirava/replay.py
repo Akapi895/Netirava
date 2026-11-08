@@ -31,10 +31,12 @@ from netirava.policy import Policy
 from netirava.storage import RunStore
 
 REPLAY_ROLES = ("known_replay", "replay", "stress")
+HOLDOUT_ROLE = "holdout"   # only replayed with unlock_holdout=True, after the method is frozen
 
 
-def replay_frame(cfg, segments=None):
-    s = load_stream(cfg, roles=list(REPLAY_ROLES), segments=segments)
+def replay_frame(cfg, segments=None, unlock_holdout=False):
+    roles = list(REPLAY_ROLES) + ([HOLDOUT_ROLE] if unlock_holdout else [])
+    s = load_stream(cfg, roles=roles, segments=segments)
     order = {w["id"]: i for i, w in enumerate(window_bounds(cfg))}
     s["_seg_order"] = s.segment.map(order)
     s = s.sort_values(["_seg_order", "available_at", "flow_id"], kind="stable").reset_index(drop=True)
@@ -60,11 +62,12 @@ def score_chunk(X, a0, an, cfg, stats):
     return out
 
 
-def run(cfg, mode="a0", pace="fast", speed=None, segments=None, max_events=None, run_id=None, models_dir=None):
+def run(cfg, mode="a0", pace="fast", speed=None, segments=None, max_events=None, run_id=None, models_dir=None,
+        unlock_holdout=False):
     mdir = models_dir or K.path(cfg, "models")
     a0 = A0.load(mdir / "a0")
     an = Anomaly.load(mdir / "anomaly") if mode == "a0-shadow" else None
-    ev = replay_frame(cfg, segments)
+    ev = replay_frame(cfg, segments, unlock_holdout)
     if max_events is not None:
         ev = ev.iloc[:max_events].reset_index(drop=True)
     tick = int(cfg["replay"]["decision_tick_ms"])
@@ -160,7 +163,7 @@ def run(cfg, mode="a0", pace="fast", speed=None, segments=None, max_events=None,
     span_s = (decision_at[-1] - decision_at[0]) / 1000 if n else 0
     n_an = {s: int((an_status == s).sum()) for s in ("ok", "missing", "late", "off")}
     meta = {
-        "run_id": run_id, "mode": mode, "pace": pace, "speed": speed if pace == "paced" else None,
+        "run_id": run_id, "mode": mode, "pace": pace, "unlock_holdout": bool(unlock_holdout), "speed": speed if pace == "paced" else None,
         "created_wall_utc": dt.datetime.now(dt.timezone.utc).isoformat(), "config_sha1": cfg["_sha1"],
         "manifest_sha1": K.sha1_file(K.path(cfg, "derived") / "manifest.json"),
         "stream_sha1": json.loads((K.path(cfg, "derived") / "manifest.json").read_text(encoding="utf-8"))["stream_sha1"],

@@ -190,7 +190,7 @@ def load_truth(cfg):
 
 def training_frame(cfg, roles):
     """Features + label for TRAINING / CALIBRATION roles only (never replay)."""
-    assert not set(roles) & {"replay", "stress", "known_replay"}, "labels of replay roles are evaluator-only"
+    assert not set(roles) & {"replay", "stress", "known_replay", "holdout"}, "labels of replay roles are evaluator-only"
     s = load_stream(cfg, roles=roles)
     t = load_truth(cfg)[["row_id", F.LABEL]]
     return s.merge(t, on="row_id", how="left", validate="one_to_one")
@@ -199,6 +199,7 @@ def training_frame(cfg, roles):
 # --------------------------------------------------------------------------- audit
 def audit(cfg):
     s = load_stream(cfg)
+    s = s[s.role != "holdout"]          # holdout stays unexamined until the method is frozen (support is in manifest.json)
     t = load_truth(cfg)
     d = s.merge(t[["flow_id", F.LABEL]], on="flow_id", validate="one_to_one")
     d["fp"] = F.fingerprint(d)
