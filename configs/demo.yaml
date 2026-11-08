@@ -54,6 +54,8 @@ labels:
     Infilteration: Infiltration
     DDoS_attacks-LOIC-HTTP: DDoS
     DoS_attacks-Hulk: DoS
+    DDOS_attack-HOIC: DDoS                  # ops holdout H5 (reporting only)
+    DDOS_attack-LOIC-UDP: DDoS
 
 a0:
   known_classes: [Benign, FTP-BruteForce, SSH-Bruteforce, DoS_attacks-GoldenEye, DoS_attacks-Slowloris,
@@ -106,3 +108,32 @@ final_system:                               # what the DoS-Hulk holdout evaluate
 family:                                     # family-aware labelling (src/netirava/family.py); labels only, never probabilities
   ambiguous: {Web: [Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]}
   tau: 0.8                                  # fine web label only if its share of the Web family mass >= tau
+  severity: {Web: 4}                        # severity of an UNCERTAIN incident = its family's, never the withheld fine class (fixes L-4.4)
+ops:                                        # ops study (2026-11-08), pre-registered in docs/OPS_STUDY_PREREG.md before any code or score
+  correlation:                              # campaign = source incidents linked by (target host, predicted family), causal, no merging
+    key: [dst, family]                      # primary (frozen)
+    ablation_keys: [[dst]]                  # reported, never selected
+    cooldown_ms: 900000                     # key expires 15 min after its last alerted flow (same as source incidents)
+    unknown_family: Unknown                 # family of alerted flows whose argmax is Benign
+  queue:
+    budgets: [10, 30]                       # review items per simulated hour
+    policies: [fifo, volume, severity]      # one shared queue function for every unit
+    alphas: [0.001, 0.005, 0.01]
+    primary: {policy: severity, budget: 10, alpha: 0.001}
+  impact_weight: {Web: 4, BruteForce: 3, DoS: 3, DDoS: 4, Bot: 5, Infiltration: 5}   # evaluator only (risk-weighted coverage)
+  go_rules: {benefit_abs: 0.05, contamination_max: 0.05, delay_max_ms: 900000}
+  drift:                                    # label-free monitor, reference = C1 scored by the same model
+    reference_window: C1_0220_benign
+    window_ms: 900000
+    min_flows: 2000
+    min_benign_eval: 5000                   # evaluator: windows with fewer benign flows are not scored for FPR
+    alphas: [0.0005, 0.001, 0.005, 0.01]
+    primary_alpha: 0.001
+    tail_band_factor: 10                    # TR band = [q_ref(1 - 10 alpha), t_alpha)
+    ratio_alarm: 2.0                        # AR / TR alarm: ratio >= 2 and one-sided binomial p < p_alarm
+    p_alarm: 0.001
+    psi_alarm: 0.25                         # S_PSI / median F_PSI alarm (conventional "major shift")
+    exceed_factor: 2.0                      # ground truth E: realized benign FPR > 2 alpha
+    cat_top_k: 20
+    go_rules: {spearman_min: 0.5, recall_min: 0.8, false_alarm_max: 0.2, min_events: 5}
+  model_rule: {incident_ratio_max: 1.5, hoic_recall_margin: 0.05}   # RQ-M: recommend pilot_cns/s0 only if all hold
