@@ -28,7 +28,11 @@ windows:
   # different family from known/dev classes, after calibration in time, 10 attacker IPs, not feature-identical
   # to a known class. Contiguous with C1; covers the burst onset (14:13). Excluded from replay/evaluate unless unlocked.
   - {id: H1_0220_ddos,      role: holdout,      start_utc: "2018-02-20 14:05", end_utc: "2018-02-20 14:35", scenario: holdout-ddos}
-  - {id: R2_0222_web,       role: replay,       start_utc: "2018-02-22 18:00", end_utc: "2018-02-22 19:00", scenario: unknown-web}
+  # v2 (2026-11-08): rare web classes become KNOWN. Observation scope = the attacked web servers (every flow
+  # from/to them, benign included); not the whole network. Split by time within the single 02-22 episode.
+  # Replaces R2_0222_web (whole-network unknown-web replay, used in MVP and decision dev runs).
+  - {id: T5_0222_web_head,  role: train,        start_utc: "2018-02-22 12:00", end_utc: "2018-02-22 17:00", scenario: known-train, scope_hosts: [172.31.69.28, 172.31.69.1]}
+  - {id: K5_0222_web_tail,  role: known_replay, start_utc: "2018-02-22 17:00", end_utc: "2018-02-22 22:00", scenario: known-within-episode, scope_hosts: [172.31.69.28, 172.31.69.1]}
   - {id: S1_0228_infil,     role: stress,       start_utc: "2018-02-28 15:00", end_utc: "2018-02-28 15:40", scenario: stress-infiltration}
   - {id: R1_0302_bot,       role: replay,       start_utc: "2018-03-02 13:30", end_utc: "2018-03-02 17:30", scenario: unknown-bot}
 
@@ -48,7 +52,9 @@ labels:
     DDoS_attacks-LOIC-HTTP: DDoS
 
 a0:
-  known_classes: [Benign, FTP-BruteForce, SSH-Bruteforce, DoS_attacks-GoldenEye, DoS_attacks-Slowloris]
+  known_classes: [Benign, FTP-BruteForce, SSH-Bruteforce, DoS_attacks-GoldenEye, DoS_attacks-Slowloris,
+                  Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]   # v2: rare web classes added
+  rare_classes: [Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]
   reference_config: ../experiments/nextphase/configs.yaml   # NP-v1 recipe (inherited if present)
   seed: 0
   target_fpr: 0.001                         # pipeline-test operating point, not a production standard
@@ -77,8 +83,8 @@ evaluation:
 decision:                                   # offline decision layer (src/netirava/decision.py), flow-level
   fpr_levels: [0.0005, 0.001, 0.005, 0.01]  # total benign FPR targets, each calibrated on C1 benign
   primary_alpha: 0.001                      # primary operating point for claims; others are secondary
-  budgets_per_hour: [100, 1000]             # flow budget B (first B alerts per simulated hour), assumption
-  dev_scenarios: [unknown-bot, unknown-web] # development unknowns used to choose V4 parameters
+  incident_budgets_per_hour: [10, 30]       # v2: triage budget B in INCIDENTS per simulated hour (first B, causal), assumption
+  dev_scenarios: [unknown-bot, unknown-web] # (v1) scenarios used to choose V4 parameters; frozen since e5336a8
   grid: {W_ms: [60000, 300000, 900000], rho: [0.01, 0.05]}   # pre-declared V4 grid
   grid_v4b: {W_ms: [60000, 300000, 900000], m: [10, 50]}       # second (last) design iteration, declared 2026-11-08
   v4: {W_ms: 60000, rho: 0.01, Wb_ms: 60000, m: 50}   # FROZEN 2026-11-08 from dev selection (V4a grid, then V4b grid); primary_alpha unchanged

@@ -159,18 +159,60 @@ def _episodes(d, gap):
     return pd.Series(new.cumsum().to_numpy(), index=a.index)
 
 
-def _budget(d, alert, B):
-    """Causal flow budget: per simulated hour only the first B alerts (time order) are kept."""
-    o = np.argsort(d.decision_at.to_numpy(), kind="stable")
-    h = (d.decision_at.to_numpy()[o] // HOUR)
-    al = alert[o]
-    rank = pd.Series(al.astype(int)).groupby(h).cumsum().to_numpy()
-    kept = np.zeros(len(d), bool)
-    kept[o] = al & (rank <= B)
-    return kept
+def incidents(d, alert, cooldown_ms):
+    """Group alerted flows into incidents: same entity (source IP), new incident when the gap since the
+    entity's previous alert exceeds cooldown_ms (event time), within each segment. Same rule for every
+    method. Returns incident id per flow (-1 = not alerted)."""
+    inc = np.full(len(d), -1, np.int64)
+    idx = np.flatnonzero(alert)
+    if not len(idx):
+        return inc
+    a = d.iloc[idx][["segment", "entity", "decision_at"]].reset_index(drop=True)
+    o = np.lexsort((a.decision_at.to_numpy(), a.entity.to_numpy(), a.segment.to_numpy()))
+    a = a.iloc[o]
+    new = (a.segment != a.segment.shift()) | (a.entity != a.entity.shift()) | (a.decision_at.diff() > cooldown_ms)
+    ids = np.cumsum(new.to_numpy()) - 1
+    inc[idx[o]] = ids
+    return inc
 
 
-def scenario_metrics(d, alerts, budgets, boot_reps=1000, seed=2027):
+def triage_metrics(d, alert, ep, cooldown_ms, budgets):
+    """Incident-level triage view of a flow-level alert vector."""
+    inc = incidents(d, alert, cooldown_ms)
+    att = d.is_attack.to_numpy()
+    m = inc >= 0
+    r = {"alerted_flows": int(m.sum())}
+    if not m.any():
+        r.update(incidents=0, compression_flows_per_incident=None, incident_precision=None)
+        return r
+    g = pd.DataFrame({"inc": inc[m], "att": att[m], "t": d.decision_at.to_numpy()[m], "ep": ep[m]})
+    agg = g.groupby("inc").agg(t0=("t", "min"), has_att=("att", "any"), n=("att", "size"))
+    n_hours = max(1, (d.decision_at // HOUR).nunique())
+    r.update(incidents=int(len(agg)), incidents_per_hour=float(len(agg) / n_hours),
+             compression_flows_per_incident=float(m.sum() / len(agg)),
+             incident_precision=float(agg.has_att.mean()),
+             false_incidents_per_hour=float((~agg.has_att).sum() / n_hours))
+    eps = np.unique(ep[att & (ep >= 0)])
+    hour = agg.t0 // HOUR
+    # two review policies under the same budget B (incidents per simulated hour):
+    #   fifo     - the first B incidents opened in each hour (fully causal)
+    #   priority - hourly review queue: the B incidents with most alerted flows in that hour (ties: earlier)
+    orders = {"fifo": agg.assign(h=hour).sort_values(["h", "t0"]),
+              "priority": agg.assign(h=hour).sort_values(["h", "n", "t0"], ascending=[True, False, True])}
+    for pol, o in orders.items():
+        rank = o.groupby("h").cumcount()
+        for B in budgets:
+            kept = set(o.index[rank.to_numpy() < B])
+            kept_flows = g[g.inc.isin(kept)]
+            covered = np.unique(kept_flows.ep[kept_flows.att & (kept_flows.ep >= 0)])
+            k = agg.loc[list(kept)] if kept else agg.iloc[:0]
+            r[f"{pol}_episode_recall@{B}inc/h"] = float(len(covered) / len(eps)) if len(eps) else None
+            r[f"{pol}_incident_precision@{B}inc/h"] = float(k.has_att.mean()) if len(k) else None
+    return r
+
+
+
+def scenario_metrics(d, alerts, budgets, boot_reps=1000, seed=2027, cooldown_ms=900_000):
     att = d.is_attack.to_numpy()
     ben = ~att
     ep = _episodes(d, 1_800_000)
@@ -188,11 +230,7 @@ def scenario_metrics(d, alerts, budgets, boot_reps=1000, seed=2027):
             r.update(attack_recall=tp / att.sum(), alert_precision=tp / al.sum() if al.sum() else None,
                      episodes=int(len(np.unique(epv[att]))),
                      episodes_detected=int(len(np.unique(epv[att & al]))))
-        for B in budgets:
-            kept = _budget(d, al, B)
-            if att.any():
-                r[f"recall@B{B}"] = float((kept & att).sum() / att.sum())
-            r[f"precision@B{B}"] = float((kept & att).sum() / kept.sum()) if kept.sum() else None
+        r["triage"] = triage_metrics(d, al, epv, cooldown_ms, budgets)
         out[name] = r
     # paired episode bootstrap of the attack-recall difference vs V1 and V3
     if att.any():
@@ -214,7 +252,7 @@ def scenario_metrics(d, alerts, budgets, boot_reps=1000, seed=2027):
     return out
 
 
-def evaluate_run(cfg, run_id, params=None, unlock_holdout=False, out_name=None):
+def evaluate_run(cfg, run_id, params=None, unlock_holdout=False, out_name=None, cal_path=None):
     from netirava.storage import RunStore
     dc = cfg["decision"]
     st = RunStore(cfg, run_id)
@@ -228,7 +266,7 @@ def evaluate_run(cfg, run_id, params=None, unlock_holdout=False, out_name=None):
     d["scenario"] = d.segment.map(scen)
     if not unlock_holdout:
         d = d[d.scenario != "holdout-ddos"]
-    cal = pd.read_parquet(K.path(cfg, "models") / "calibration_scores.parquet")
+    cal = pd.read_parquet(cal_path or (K.path(cfg, "models") / "calibration_scores.parquet"))
     p = params or dc["v4"]
     res = {"run_id": run_id, "params": p, "levels": {}}
     for alpha in dc["fpr_levels"]:
@@ -236,7 +274,8 @@ def evaluate_run(cfg, run_id, params=None, unlock_holdout=False, out_name=None):
         res["levels"][str(alpha)] = {"thresholds": t, "scenarios": {}}
         for sc, g in d.groupby("scenario"):
             g = g.reset_index(drop=True)
-            res["levels"][str(alpha)]["scenarios"][sc] = scenario_metrics(g, apply(g, t), dc["budgets_per_hour"])
+            res["levels"][str(alpha)]["scenarios"][sc] = scenario_metrics(g, apply(g, t), dc["incident_budgets_per_hour"],
+                                                                          cooldown_ms=int(cfg["policy"]["cooldown_ms"]))
     if out_name:
         (st.dir / out_name).write_text(json.dumps(res, indent=2, default=float), encoding="utf-8")
     return res

@@ -137,8 +137,16 @@ class A0:
         return A0(m, meta["classes"], meta["threshold"]["value"], meta)
 
 
-def train_a0(cfg):
+VARIANTS = {   # imbalance handling (v2 ablation); "a0" is the deployed, pre-declared recipe
+    "a0": {"smote": True, "class_weights": None},            # NP-v1 anchor: SMOTE classes < 1000 rows -> 1000
+    "a1": {"smote": False, "class_weights": None},           # no resampling, no weights
+    "a2": {"smote": False, "class_weights": "SqrtBalanced"}, # CatBoost auto_class_weights, no resampling
+}
+
+
+def train_a0(cfg, variant="a0"):
     from catboost import CatBoostClassifier
+    vcfg = VARIANTS[variant]
     from netirava.dataset import training_frame
     t0 = time.perf_counter()
     classes = list(cfg["a0"]["known_classes"])
@@ -149,11 +157,17 @@ def train_a0(cfg):
     y = tr[F.LABEL].map({c: i for i, c in enumerate(classes)}).to_numpy(np.int64)
     X = F.matrix(tr)
     rec = reference_recipe(cfg)
-    Xf, yf, sm = apply_smote(X, y, rec, classes)
+    if vcfg["smote"]:
+        Xf, yf, sm = apply_smote(X, y, rec, classes)
+    else:
+        Xf, yf, sm = X, y, {"applied": False, "note": f"variant {variant}: no resampling"}
     params = catboost_params(rec)
+    probe_params = catboost_params(rec, device="CPU")
+    if vcfg["class_weights"]:
+        params["auto_class_weights"] = probe_params["auto_class_weights"] = vcfg["class_weights"]
     lr_info = None
     if rec["device"] == "GPU" and rec.get("lr_rule") == "cpu_auto_probe":
-        probe = CatBoostClassifier(**catboost_params(rec, device="CPU"))
+        probe = CatBoostClassifier(**probe_params)
         probe.fit(Xf, yf, callbacks=[_StopAfterFirst()])
         params["learning_rate"] = float(probe.get_all_params()["learning_rate"])
         lr_info = {"rule": "cpu_auto_probe", "learning_rate": params["learning_rate"]}
@@ -161,7 +175,7 @@ def train_a0(cfg):
     t1 = time.perf_counter()
     m.fit(Xf, yf)
     fit_s = time.perf_counter() - t1
-    out = K.path(cfg, "models") / "a0"
+    out = K.path(cfg, "models") / variant
     out.mkdir(parents=True, exist_ok=True)
     m.save_model(str(out / "a0.cbm"))
     model_hash = K.sha1_file(out / "a0.cbm")[:12]
@@ -181,7 +195,7 @@ def train_a0(cfg):
                 "uncertain": bool(nb < 10 / target),
                 "note": "attack_score = 1 - p(Benign); not a calibrated probability"}
     counts = np.bincount(y, minlength=len(classes))
-    meta = {"detector": "a0", "model_hash": model_hash, "classes": classes,
+    meta = {"detector": "a0", "variant": variant, "variant_config": vcfg, "model_hash": model_hash, "classes": classes,
             "class_map": {c: i for i, c in enumerate(classes)},
             "train_counts": {c: int(n) for c, n in zip(classes, counts)},
             "train_prior": {c: float(n / counts.sum()) for c, n in zip(classes, counts)},

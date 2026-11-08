@@ -8,7 +8,8 @@ Phản ứng chỉ là mô phỏng (incident/notification): không block, không
 
 | Tài liệu | Nội dung |
 |---|---|
-| [`docs/RESEARCH_FRAMING.md`](docs/RESEARCH_FRAMING.md) | Bài toán, research question, protocol, metric, luật chứng minh |
+| [`docs/RESULTS_FINAL.md`](docs/RESULTS_FINAL.md) | **Kết quả cuối**: (a) lớp hiếm, (b) triage theo incident, tấn công thay đổi, chi phí |
+| [`docs/RESEARCH_FRAMING.md`](docs/RESEARCH_FRAMING.md) | Bài toán theo đề chính thức, research question, protocol, metric, luật chứng minh |
 | [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) | Subset CIC18-Causal-Demo-v1: cửa sổ, vai trò, support, host overlap, giới hạn |
 | [`docs/MODEL_CARD_A0.md`](docs/MODEL_CARD_A0.md) | A0-CIC |
 | [`docs/RESULTS_MVP.md`](docs/RESULTS_MVP.md) | Kết quả run MVP |
@@ -26,7 +27,8 @@ src/netirava/
   replay.py              replay causal theo available_at, fast/paced, shadow cô lập
   policy.py              candidate → incident theo entity, cooldown và budget theo event time
   storage.py             run.json, detections.parquet, alerts.db (feedback append-only)
-  evaluation.py          evaluator, module duy nhất đọc nhãn
+  evaluation.py          evaluator (module duy nhất đọc nhãn), ablation imbalance
+  app.py                 giao diện triage (Streamlit): hàng incident, chi tiết, feedback
   decision.py            decision layer offline: V1 A0, V2 anomaly, V3 OR, V4a/V4b entity + ablation, nhiều mức FPR
 tests/                   pipeline end-to-end trên dữ liệu tổng hợp
 ```
@@ -66,7 +68,8 @@ $py = ".venv\Scripts\python.exe"
 & $py -m netirava inspect  --config configs/demo.yaml      # sha1, schema, hourly class counts
 & $py -m netirava prepare  --config configs/demo.yaml      # windows -> stream/truth/manifest
 & $py -m netirava audit    --config configs/demo.yaml      # host / fingerprint overlap, collisions
-& $py -m netirava train-a0 --config configs/demo.yaml      # GPU; threshold on calibration benign
+& $py -m netirava train-a0 --config configs/demo.yaml --variant a0   # GPU; a1 = no SMOTE, a2 = SqrtBalanced
+& $py -m netirava ablate-imbalance --config configs/demo.yaml          # per-class (rare) metrics of a0/a1/a2
 & $py -m netirava train-anomaly --config configs/demo.yaml
 & $py -m netirava replay --config configs/demo.yaml --mode a0-shadow            # fast
 & $py -m netirava replay --config configs/demo.yaml --mode a0-shadow --pace paced --speed 60 --segments R1_0302_bot --max-events 30000
@@ -75,6 +78,7 @@ $py = ".venv\Scripts\python.exe"
 & $py -m netirava replay --config configs/demo.yaml --mode a0-shadow --segments H1_0220_ddos --unlock-holdout
 & $py -m netirava decide --run <holdout_run_id> --unlock-holdout # only after the method is frozen
 & $py -m netirava evaluate  --run <run_id>
+& $py -m netirava ui --run <run_id>                               # triage interface (http://localhost:8501)
 & $py -m netirava incidents --run <run_id> --limit 5
 & $py -m netirava feedback  --run <run_id> --alert-id 1 --status true_positive --source analyst --confirmed-by <name>
 ```

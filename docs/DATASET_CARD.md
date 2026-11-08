@@ -14,6 +14,14 @@ Subset dẫn xuất từ **NF-CSE-CIC-IDS2018-v3** (NetFlow v3, University of Qu
 
 Mỗi attack class chỉ xuất hiện trong **một ngày UTC**, gần như trong một burst liên tục (`runs/inspect/class_by_utc_day.csv`, khớp với profile GraphIDS ngày 2026-11-07). Hệ quả: không có class nào có hai episode độc lập trong dữ liệu.
 
+## Cập nhật v2 (2026-11-08)
+- Thêm **H1_0220_ddos** (holdout, DDoS LOIC-HTTP, 20/02 14:05–14:35; 192,863 flow).
+- Bỏ **R2_0222_web** (replay web toàn mạng). Thay bằng **T5_0222_web_head** (train, 12:00–17:00) và **K5_0222_web_tail** (known_replay, 17:00–22:00). Cả hai được **giới hạn phạm vi vào máy chủ web** 172.31.69.28 và 172.31.69.1 (mọi flow đi từ hoặc đến các host này, kể cả benign):
+  - T5: Web 903, XSS 223, SQLi 150, Benign 534;
+  - K5: Web 715, XSS 257, SQLi 290, Benign 534.
+- Web, XSS và SQLi trở thành **known class (lớp hiếm)**.
+- Tổng 2,946,797 row (trần 3.2M). Bảng bên dưới là bản v1 (MVP).
+
 ## Cách chọn subset
 - **Quy tắc:** giữ **mọi flow** có `FLOW_START` thuộc `[start, end)` của một cửa sổ khai báo trong config, trên toàn bộ mạng quan sát được. Không lấy mẫu từng row và không cân bằng class.
 - **Thời điểm chốt:** các cửa sổ, vai trò và known class được chốt **sau** `inspect` (chỉ dùng support theo giờ) và **trước** khi train model nào.

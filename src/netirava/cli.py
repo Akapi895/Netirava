@@ -14,9 +14,11 @@ def _print(obj):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="netirava")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration"):
+    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance"):
         p = sub.add_parser(name)
         p.add_argument("--config", default="configs/demo.yaml")
+        if name == "train-a0":
+            p.add_argument("--variant", default="a0", choices=["a0", "a1", "a2"])
     p = sub.add_parser("replay")
     p.add_argument("--config", default="configs/demo.yaml")
     p.add_argument("--mode", choices=["a0", "a0-shadow"], default="a0")
@@ -43,6 +45,10 @@ def main(argv=None):
     p.add_argument("--corrects", type=int, default=None, help="feedback_id this entry corrects")
     p.add_argument("--provenance", default="analyst", choices=["analyst", "demo", "simulated_ground_truth"])
     p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("ui")
+    p.add_argument("--run", required=True)
+    p.add_argument("--port", default="8501")
+    p.add_argument("--config", default="configs/demo.yaml")
     p = sub.add_parser("incidents")
     p.add_argument("--run", required=True)
     p.add_argument("--limit", type=int, default=20)
@@ -62,7 +68,7 @@ def main(argv=None):
         _print(audit(cfg))
     elif a.cmd == "train-a0":
         from netirava.detectors import train_a0
-        _print(train_a0(cfg))
+        _print(train_a0(cfg, a.variant))
     elif a.cmd == "train-anomaly":
         from netirava.detectors import train_anomaly
         _print(train_anomaly(cfg))
@@ -70,6 +76,13 @@ def main(argv=None):
         from netirava.replay import run
         _print(run(cfg, mode=a.mode, pace=a.pace, speed=a.speed, segments=a.segments, max_events=a.max_events,
                    unlock_holdout=a.unlock_holdout))
+    elif a.cmd == "ablate-imbalance":
+        from netirava.evaluation import ablate_imbalance
+        r = ablate_imbalance(cfg)
+        _print({v: {"macro_f1_known": x["macro_f1_known"], "macro_f1_rare": x["macro_f1_rare"],
+                    "rare": {c: (round(m["precision"], 3), round(m["recall"], 3), round(m["f1"], 3), m["support"])
+                             for c, m in x["per_class"].items() if c in cfg["a0"]["rare_classes"]},
+                    "delta_rare_vs_a0": x.get("delta_macro_f1_rare_vs_a0")} for v, x in r["variants"].items()})
     elif a.cmd == "score-calibration":
         from netirava.decision import score_calibration
         _print({"rows": len(score_calibration(cfg))})
@@ -89,6 +102,12 @@ def main(argv=None):
         from netirava.storage import RunStore
         st = RunStore(cfg, a.run)
         _print(st.add_feedback(a.alert_id, a.status, a.source, a.confirmed_by, a.attack_label, a.corrects, a.provenance))
+    elif a.cmd == "ui":
+        import subprocess
+        from pathlib import Path
+        app = Path(__file__).with_name("app.py")
+        return subprocess.call([sys.executable, "-m", "streamlit", "run", str(app), "--server.port", a.port,
+                                "--server.headless", "true", "--", "--config", a.config, "--run", a.run])
     elif a.cmd == "incidents":
         from netirava.storage import RunStore
         st = RunStore(cfg, a.run)

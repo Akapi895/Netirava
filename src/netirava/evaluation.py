@@ -190,3 +190,74 @@ def _summary(rep):
         if "shadow" in v:
             s[k]["shadow_benign_fpr"] = v["shadow"]["benign_shadow_fpr"]
     return s
+
+
+# --------------------------------------------------------------------------- imbalance ablation (output a)
+def ablate_imbalance(cfg, variants=("a0", "a1", "a2"), boot_reps=1000, seed=2027):
+    """Known-class (within-episode) per-class metrics of the imbalance variants on known_replay flows.
+    a0 = deployed recipe (pre-declared); a1/a2 are ablations, NOT selected on this data.
+    Thresholds for the binary view are calibrated per variant on C1 benign. Delta of the rare-class
+    macro-F1 vs a0 uses a bootstrap over source IPs (attackers and benign hosts)."""
+    from netirava.dataset import training_frame
+    from netirava.detectors import A0, threshold_at_fpr
+    classes = list(cfg["a0"]["known_classes"])
+    rare = list(cfg["a0"]["rare_classes"])
+    levels = cfg["decision"]["fpr_levels"]
+    ev = load_stream(cfg, roles=["known_replay"])
+    truth = load_truth(cfg)[["flow_id", F.LABEL]]
+    ev = ev.merge(truth, on="flow_id", validate="one_to_one")
+    cal = training_frame(cfg, ["calibration"])
+    y = ev[F.LABEL].to_numpy()
+    X, Xc = F.matrix(ev), F.matrix(cal)
+    cb = cal[F.LABEL].to_numpy() == "Benign"
+    ent = pd.factorize(ev[F.SRC])[0]
+    rep = {"rows": len(ev), "support": ev[F.LABEL].value_counts().to_dict(), "variants": {}}
+    preds = {}
+    for v in variants:
+        m = A0.load(K.path(cfg, "models") / v)
+        P, att, pr = m.score(X)
+        pred = np.asarray(m.classes, dtype=object)[pr]
+        preds[v] = pred
+        sc_cal = m.score(Xc)[1]
+        r = {"model_hash": m.version, "smote": m.meta["smote"].get("applied"), "variant_config": m.meta.get("variant_config"),
+             "per_class": {}, "binary": {}}
+        for c in classes:
+            t, p = y == c, pred == c
+            tp = int((t & p).sum())
+            P_, R_ = (tp / p.sum() if p.sum() else 0.0), (tp / t.sum() if t.sum() else 0.0)
+            r["per_class"][c] = {"support": int(t.sum()), "precision": P_, "recall": R_,
+                                 "f1": 2 * P_ * R_ / (P_ + R_) if P_ + R_ else 0.0, "recall_wilson95_rowiid": wilson(tp, int(t.sum())),
+                                 "predicted_as": pd.Series(pred[t]).value_counts().head(3).to_dict() if c in rare else None}
+        r["macro_f1_known"] = float(np.mean([r["per_class"][c]["f1"] for c in classes]))
+        r["macro_f1_rare"] = float(np.mean([r["per_class"][c]["f1"] for c in rare]))
+        for a in levels:
+            thr, _ = threshold_at_fpr(sc_cal[cb], a)
+            al = att >= thr
+            ben = y == "Benign"
+            r["binary"][str(a)] = {"threshold": thr, "benign_fpr_known_replay": float(al[ben].mean()),
+                                   "attack_recall": float(al[~ben].mean()),
+                                   "rare_recall": {c: float(al[y == c].mean()) for c in rare}}
+        rep["variants"][v] = r
+    # bootstrap over source entities: delta macro-F1 on rare classes vs a0
+    def rare_f1(pred, w):
+        out = []
+        for c in rare:
+            t, p = (y == c), (pred == c)
+            tp, ps, ts = (w * (t & p)).sum(), (w * p).sum(), (w * t).sum()
+            out.append(2 * tp / (ps + ts) if ps + ts else 0.0)
+        return np.mean(out)
+    rng = np.random.default_rng(seed)
+    G = ent.max() + 1
+    for v in variants:
+        if v == "a0":
+            continue
+        d = []
+        for _ in range(boot_reps):
+            w = np.bincount(rng.integers(0, G, G), minlength=G)[ent].astype(float)
+            d.append(rare_f1(preds[v], w) - rare_f1(preds["a0"], w))
+        rep["variants"][v]["delta_macro_f1_rare_vs_a0"] = {
+            "point": rep["variants"][v]["macro_f1_rare"] - rep["variants"]["a0"]["macro_f1_rare"],
+            "ci95_source_ip_bootstrap": [float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))], "n_sources": int(G)}
+    out = K.path(cfg, "runs") / "ablate_imbalance.json"
+    out.write_text(json.dumps(rep, indent=2, default=_js), encoding="utf-8")
+    return rep

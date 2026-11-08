@@ -118,6 +118,7 @@ def prepare(cfg):
     wins = window_bounds(cfg)
     starts = np.array([w["start_ms"] for w in wins])
     ends = np.array([w["end_ms"] for w in wins])
+    scopes = {i: list(w["scope_hosts"]) for i, w in enumerate(wins) if w.get("scope_hosts")}
     keep_cols = [F.TS_START, F.TS_END, F.SRC, F.DST] + F.FEATURES + [F.LABEL_BIN, F.LABEL]
     reader = open_stream(src)
     parts, offset = [], 0
@@ -129,6 +130,15 @@ def prepare(cfg):
         s = df[F.TS_START].to_numpy()
         wi = np.searchsorted(starts, s, side="right") - 1
         ok = (wi >= 0) & (s < ends[np.clip(wi, 0, None)])
+        if ok.any() and scopes:
+            # windows with scope_hosts keep only flows from/to those hosts (declared observation scope)
+            wsafe = np.clip(wi, 0, None)
+            src_ok = df[F.SRC].to_numpy()
+            dst_ok = df[F.DST].to_numpy()
+            for j, hosts in scopes.items():
+                m = ok & (wsafe == j)
+                if m.any():
+                    ok[m] = np.isin(src_ok[m], hosts) | np.isin(dst_ok[m], hosts)
         if ok.any():
             sub = df.loc[ok, ["row_id"] + keep_cols].copy()
             sub["segment"] = np.asarray([wins[i]["id"] for i in wi[ok]])
