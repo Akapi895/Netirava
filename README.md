@@ -11,6 +11,7 @@ Phản ứng chỉ là mô phỏng. Dự án nộp cho DataNovathon 2026, đề 
 | Tài liệu | Nội dung |
 |---|---|
 | [`docs/FINAL_SOLUTION_ARCHITECTURE.md`](docs/FINAL_SOLUTION_ARCHITECTURE.md) · [`CURRENT_LIMITATIONS.md`](docs/CURRENT_LIMITATIONS.md) · [`FINAL_COMPLETION_PLAN.md`](docs/FINAL_COMPLETION_PLAN.md) | **Giải pháp đã chốt** (3 thành phần), toàn bộ hạn chế, checklist hoàn thiện |
+| [`docs/EDA_REPORT.md`](docs/EDA_REPORT.md) · [`PREPROCESSING_SPEC.md`](docs/PREPROCESSING_SPEC.md) · [`FEATURE_EVALUATION.md`](docs/FEATURE_EVALUATION.md) · [`FE_HOLDOUT_RESULTS.md`](docs/FE_HOLDOUT_RESULTS.md) | EDA, preprocessing, đánh giá feature, holdout mới H3/H4 |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Pipeline, ranh giới module, contract dữ liệu, bất biến |
 | [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md) (+ [bản sinh tự động](docs/EXPERIMENT_REGISTRY.generated.md)) | Mọi thí nghiệm: loại bằng chứng (DEV / EXP / HO), artifact, lệnh, commit |
 | [`docs/RESULTS_FINAL.md`](docs/RESULTS_FINAL.md) + [`docs/RESULTS_FINAL_ADDENDUM.md`](docs/RESULTS_FINAL_ADDENDUM.md) | Kết quả trên nhãn gốc; addendum về lỗi nhãn NF-v3 |
@@ -25,7 +26,7 @@ Phản ứng chỉ là mô phỏng. Dự án nộp cho DataNovathon 2026, đề 
 ```powershell
 cd D:\Downloads\DataNova\Netirava
 uv sync                                   # Python 3.12; versions pinned in uv.lock
-.venv\Scripts\python.exe -m pytest -q     # 18 tests
+.venv\Scripts\python.exe -m pytest -q     # 25 tests
 ```
 - **Ngoài git:** `datasets/` (CSV gốc, chỉ đọc), `artifacts/` (subset dẫn xuất, model), `runs/` (các run).
 - **A0** kế thừa công thức NP-v1 từ `../experiments/nextphase/configs.yaml`.
@@ -40,7 +41,7 @@ $py = ".venv\Scripts\python.exe"
 ```
 
 ## Toàn bộ lệnh CLI
-`inspect` · `prepare` · `audit` · `relabel` · `train-a0 [--variant a0|a1|a2] [--seed N]` · `train-anomaly` · `score-calibration` · `replay [--mode a0|a0-shadow] [--pace fast|paced] [--model DIR] [--segments …] [--max-events N] [--unlock-holdout]` · `evaluate --run` · `decide --run [--select] [--unlock-holdout]` · `family-report --run [--segments …]` · `export --run` · `ablate-imbalance` · `minority-report` · `pilot-train` · `pilot-eval` · `registry` · `incidents --run` · `feedback --run --alert-id --status [--provenance]` · `ui --run`
+`inspect` · `prepare` · `audit` · `relabel` · `train-a0 [--variant a0|a1|a2] [--seed N]` · `train-anomaly` · `score-calibration` · `replay [--mode a0|a0-shadow] [--pace fast|paced] [--model DIR] [--segments …] [--max-events N] [--unlock-holdout]` · `evaluate --run` · `decide --run [--select] [--unlock-holdout]` · `family-report --run [--segments …]` · `export --run` · `eda` · `fe-study` · `fe-final` · `ablate-imbalance` · `minority-report` · `pilot-train` · `pilot-eval` · `registry` · `incidents --run` · `feedback --run --alert-id --status [--provenance]` · `ui --run`
 
 Mỗi lần `replay` tạo một run mới `runs/<run_id>/` gồm `run.json`, `detections.parquet` và `alerts.db`. Cách tái lập từng thí nghiệm có trong [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md).
 

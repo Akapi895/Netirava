@@ -31,8 +31,9 @@ Mỗi số liệu trong báo cáo đều truy ngược được về artifact d�
 | 10 | Nhãn đã sửa và pilot A0 (3 seed) | DEV (within-episode) | `truth_cns2022.parquet`, `artifacts/models/pilot_cns/`, `runs/pilot_cns_results.json` | `relabel`, `pilot-train`, `pilot-eval` | [`CORRECTED_LABEL_AUDIT.md`](CORRECTED_LABEL_AUDIT.md), [`CORRECTED_LABEL_PILOT_RESULTS.md`](CORRECTED_LABEL_PILOT_RESULTS.md) | `2bb5529` |
 | 11 | Family-aware (tích hợp chính thức) | DEV | `runs/20261108T143728_a0-shadow_fast/{FAMILY_REPORT*.json, export/}`, `runs/family_aware_triage_impact.json` | `family-report`, `export` | [`FAMILY_AWARE_FINAL_REPORT.md`](FAMILY_AWARE_FINAL_REPORT.md) | bản hoàn thiện |
 | 12 | Pilot model chạy replay độc lập (smoke test) | — | `runs/20261108T143803_a0_fast` | `replay --model pilot_cns/s0` | — | bản hoàn thiện |
+| 13 | **Feature-engineering study** (EDA, preprocessing, nhóm feature, control, shortcut): v2 bỏ shortcut bị **holdout H3/H4 bác bỏ (NO-GO)**; FPR ≤ 0.1% đạt trên ngày mới H3 | DEV (Phase 4) + **HO** (H3/H4, khai báo ở `e820605`) | `artifacts/fe_study_v1/{eda,study}/`, `runs/fe_study/` | `eda`, `fe-study`, `fe-final` (`configs/fe_study.yaml`) | [`EDA_REPORT.md`](EDA_REPORT.md), [`FEATURE_EVALUATION.md`](FEATURE_EVALUATION.md), [`FE_HOLDOUT_RESULTS.md`](FE_HOLDOUT_RESULTS.md) | `e820605` → `4019679` (tag `fe-v2-frozen`) |
 
-**Kết quả âm được giữ:** GraphIDS NO-GO; V4a không có lợi trên dev; V4b bị bác bỏ trên H1; triage theo severity không tốt hơn theo volume; A1+B2 (NP-v1) không chuyển giao qua đợt; A0 v2 có XSS F1 = 0 trên nhãn đã sửa.
+**Kết quả âm được giữ:** GraphIDS NO-GO; V4a không có lợi trên dev; V4b bị bác bỏ trên H1; triage theo severity không tốt hơn theo volume; A1+B2 (NP-v1) không chuyển giao qua đợt; A0 v2 có XSS F1 = 0 trên nhãn đã sửa; bỏ cột shortcut làm kết quả holdout H3/H4 kém hơn.
 
 ## Bằng chứng ngoài repo này (không di chuyển)
 | Giai đoạn | Vị trí | Commit hoặc file |
