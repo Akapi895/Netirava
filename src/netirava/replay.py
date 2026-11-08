@@ -25,6 +25,7 @@ import psutil
 
 from netirava import config as K
 from netirava import features as F
+from netirava.campaign import assign as assign_campaigns, flow_family
 from netirava.dataset import load_stream, window_bounds
 from netirava.detectors import A0, Anomaly
 from netirava.family import FIELDS as FAMILY_FIELDS, annotate, settings as family_settings
@@ -60,6 +61,21 @@ def score_chunk(X, a0, an, cfg, stats):
         out["t_an"] = time.perf_counter() - t1
         if out["an_status"] == "ok" and out["t_an"] * 1000 / max(len(X), 1) > cfg["replay"]["shadow_deadline_ms_per_event"]:
             out["an_status"] = "late"
+    return out
+
+
+def campaign_ids(det, dst, cfg):
+    """Campaign id per flow (0 = not alerted): causal correlation of the active source incidents
+    (netirava.campaign, same event order as the policy). Review unit only; never changes an alert."""
+    oc = cfg.get("ops", {}).get("correlation")
+    out = np.zeros(len(det), np.int64)
+    m = det.incident_id.to_numpy() > 0
+    if oc is None or not m.any():
+        return out
+    al = det.loc[m, ["segment", "decision_at", "available_at", "flow_id"]].assign(
+        src_incident=det.incident_id[m], dst=dst[m],
+        family=flow_family(det.predicted_family[m], det.fine_label_status[m]))
+    out[m] = assign_campaigns(al, oc["cooldown_ms"], tuple(oc["key"]))
     return out
 
 
@@ -164,6 +180,7 @@ def run(cfg, mode="a0", pace="fast", speed=None, segments=None, max_events=None,
     fams, tax, tau = family_settings(cfg)
     for k, v in annotate(P_all.astype(np.float64), a0.classes, fams, tax, tau).items():
         det[k] = v
+    det["campaign_id"] = campaign_ids(det, ev[F.DST].to_numpy(), cfg)
     if an is not None:
         det["an_score"] = an_all
         det["an_would_alert"] = an_all >= an.threshold

@@ -52,6 +52,20 @@ def main(argv=None):
         p.add_argument("--run", required=True)
         p.add_argument("--segments", nargs="*", default=None)
         p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("drift-reference", help="build the label-free drift-monitor reference of a model (C1)")
+    p.add_argument("--model", default="a0")
+    p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("drift-monitor", help="label-free monitor table of a run (DRIFT_MONITOR.parquet)")
+    p.add_argument("--run", required=True)
+    p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("ops-study", help="evaluator: incident correlation + drift monitoring on runs")
+    p.add_argument("--runs", nargs="+", required=True)
+    p.add_argument("--tag", required=True)
+    p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("ops-go", help="pre-registered GO rules on an ops-study result")
+    p.add_argument("--tag", required=True)
+    p.add_argument("--benefit-scenario", default="holdout-ddos-hoic")
+    p.add_argument("--config", default="configs/demo.yaml")
     p = sub.add_parser("ui")
     p.add_argument("--run", required=True)
     p.add_argument("--port", default="8501")
@@ -146,6 +160,24 @@ def main(argv=None):
                 **{lv: {"family": v["family"],
                         "risk_coverage@0.8": {k: x for k, x in v["risk_coverage"].items() if k.endswith("@0.8")}}
                    for lv, v in r["labels"].items()}})
+    elif a.cmd == "drift-reference":
+        from netirava.drift import build_reference
+        r = build_reference(cfg, a.model)
+        _print({k: r[k] for k in ("model_dir", "model_hash", "model_threshold", "n", "n_benign", "levels")})
+    elif a.cmd == "drift-monitor":
+        from netirava.drift import monitor_run
+        t = monitor_run(cfg, a.run)
+        _print({"windows": len(t), "status": t.status.value_counts().to_dict()})
+    elif a.cmd == "ops-study":
+        from netirava.ops import study
+        _, summ, win = study(cfg, a.runs, a.tag)
+        _print({"windows": len(win), "drift": {m: {k: {"windows": v["windows"], "E": v["E_windows"],
+                                                         "TR": v["signals"]["TR"], "go": v["go"]}
+                                                     for k, v in x.items() if k.endswith("@%s" % cfg["ops"]["drift"]["primary_alpha"])}
+                                                 for m, x in summ["drift"].items()}})
+    elif a.cmd == "ops-go":
+        from netirava.ops import go_report
+        _print(go_report(cfg, a.tag, a.benefit_scenario))
     elif a.cmd == "ui":
         import subprocess
         from pathlib import Path

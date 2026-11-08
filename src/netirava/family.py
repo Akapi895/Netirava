@@ -84,6 +84,22 @@ def incident_labels(df, incident_col="incident_id"):
     return pd.DataFrame({"predicted_family": fam, "fine_label": top, "fine_label_status": st, "share_uncertain": unc})
 
 
+def flow_severity(df, cfg):
+    """Family-aware severity per flow (fixes L-4.4: the withheld fine class never leaks into priority):
+    fine label -> triage.severity[class]; uncertain -> family.severity[family]; Benign argmax -> triage.severity['Benign'].
+    Returns (severity int array, source array in {'fine_class', 'family', 'benign_argmax'})."""
+    sev_c = cfg.get("triage", {}).get("severity", {})
+    sev_f = cfg.get("family", {}).get("severity", {})
+    default = int(sev_c.get(BENIGN, 4))
+    st = df.fine_label_status.to_numpy(dtype=object)
+    fine = df.fine_label.map(sev_c).to_numpy(dtype=float)
+    fam = df.predicted_family.map(sev_f).to_numpy(dtype=float)
+    sev = np.where(st == "uncertain", fam, np.where(st == "benign", default, fine))
+    sev = np.where(np.isnan(sev), default, sev).astype(int)
+    src = np.where(st == "uncertain", "family", np.where(st == "benign", "benign_argmax", "fine_class")).astype(object)
+    return sev, src
+
+
 # kept for the earlier evaluation code path (pilot.py)
 def render(P, classes, families, tau):
     return annotate(P, classes, families, {}, tau)["fine_label"]
