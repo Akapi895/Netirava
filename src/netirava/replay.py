@@ -27,6 +27,7 @@ from netirava import config as K
 from netirava import features as F
 from netirava.dataset import load_stream, window_bounds
 from netirava.detectors import A0, Anomaly
+from netirava.family import FIELDS as FAMILY_FIELDS, annotate, settings as family_settings
 from netirava.policy import Policy
 from netirava.storage import RunStore
 
@@ -62,10 +63,20 @@ def score_chunk(X, a0, an, cfg, stats):
     return out
 
 
+def git_commit():
+    import subprocess
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=K.ROOT, text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        return None
+
+
 def run(cfg, mode="a0", pace="fast", speed=None, segments=None, max_events=None, run_id=None, models_dir=None,
-        unlock_holdout=False):
+        unlock_holdout=False, model="a0"):
+    """model: sub-directory of the models dir holding an A0 (a0.cbm + a0_meta.json), e.g. 'a0' (default,
+    A0 v2) or 'pilot_cns/s0' (corrected-label pilot). The anomaly model is always models/anomaly."""
     mdir = models_dir or K.path(cfg, "models")
-    a0 = A0.load(mdir / "a0")
+    a0 = A0.load(mdir / model)
     an = Anomaly.load(mdir / "anomaly") if mode == "a0-shadow" else None
     ev = replay_frame(cfg, segments, unlock_holdout)
     if max_events is not None:
@@ -150,6 +161,9 @@ def run(cfg, mode="a0", pace="fast", speed=None, segments=None, max_events=None,
                         "incident_id": inc})
     for k, c in enumerate(a0.classes):
         det[f"p_{c}"] = P_all[:, k]
+    fams, tax, tau = family_settings(cfg)
+    for k, v in annotate(P_all.astype(np.float64), a0.classes, fams, tax, tau).items():
+        det[k] = v
     if an is not None:
         det["an_score"] = an_all
         det["an_would_alert"] = an_all >= an.threshold
@@ -167,7 +181,8 @@ def run(cfg, mode="a0", pace="fast", speed=None, segments=None, max_events=None,
         "created_wall_utc": dt.datetime.now(dt.timezone.utc).isoformat(), "config_sha1": cfg["_sha1"],
         "manifest_sha1": K.sha1_file(K.path(cfg, "derived") / "manifest.json"),
         "stream_sha1": json.loads((K.path(cfg, "derived") / "manifest.json").read_text(encoding="utf-8"))["stream_sha1"],
-        "a0": {"model_hash": a0.version, "threshold": a0.threshold, "classes": a0.classes},
+        "a0": {"model_hash": a0.version, "threshold": a0.threshold, "classes": a0.classes, "model_dir": model},
+        "family": {"ambiguous": fams, "tau": tau, "fields": FAMILY_FIELDS}, "git_commit": git_commit(),
         "anomaly": ({"model_hash": an.version, "threshold": an.threshold} if an else None),
         "feature_schema": F.FEATURE_SCHEMA_VERSION, "feature_schema_hash": F.schema_hash(),
         "contracts": F.CONTRACT_VERSION, "policy": pc, "segments": sorted(set(seg.tolist())),

@@ -1,92 +1,50 @@
 # Netirava
 
-IDS dựa trên **flow đã hoàn tất**, chạy bằng **dataset replay** trên NF-CSE-CIC-IDS2018-v3. Gồm:
-- **A0**: CatBoost theo công thức anchor NP-v1, train lại trên CIC; chạy ở chế độ active.
-- **IsolationForest**: anomaly detector chạy ở chế độ shadow (chỉ quan sát).
+IDS chạy trên **flow đã hoàn tất** (NF-CSE-CIC-IDS2018-v3), dùng **dataset replay**:
+- **CatBoost A0** quyết định attack hay benign tại một threshold đã khóa;
+- **nhãn family-aware** (không phát lớp mịn khi Web/XSS/SQLi mơ hồ);
+- **gom incident** và **giao diện triage Streamlit**;
+- **IsolationForest** chạy ở chế độ shadow.
 
-Phản ứng chỉ là mô phỏng (incident/notification): không block, không quarantine, không tự train lại.
+Phản ứng chỉ là mô phỏng. Dự án nộp cho DataNovathon 2026, đề DN-CY-01.
 
 | Tài liệu | Nội dung |
 |---|---|
-| [`docs/RESULTS_FINAL.md`](docs/RESULTS_FINAL.md) | **Kết quả cuối**: (a) lớp hiếm, (b) triage theo incident, tấn công thay đổi, chi phí |
-| [`docs/RESULTS_FINAL_ADDENDUM.md`](docs/RESULTS_FINAL_ADDENDUM.md) | **Đọc kèm RESULTS_FINAL**: lỗi nhãn NF-v3 (forensics) |
-| [`docs/FP_LABEL_FORENSICS.md`](docs/FP_LABEL_FORENSICS.md) · [`MINORITY_INFORMATION_AUDIT.md`](docs/MINORITY_INFORMATION_AUDIT.md) · [`SOTA_METHOD_REVIEW.md`](docs/SOTA_METHOD_REVIEW.md) · [`NEXT_RESEARCH_DECISION.md`](docs/NEXT_RESEARCH_DECISION.md) | Audit FP và nhãn, giới hạn thông tin lớp hiếm, review paper, quyết định nghiên cứu |
-| [`CORRECTED_LABEL_AUDIT.md`](docs/CORRECTED_LABEL_AUDIT.md) · [`CORRECTED_LABEL_PILOT_RESULTS.md`](docs/CORRECTED_LABEL_PILOT_RESULTS.md) · [`FAMILY_AWARE_EVALUATION.md`](docs/FAMILY_AWARE_EVALUATION.md) · [`DATA_SUFFICIENCY_DECISION.md`](docs/DATA_SUFFICIENCY_DECISION.md) | Nhãn sửa theo CNS2022, pilot, family-aware output, quyết định về dữ liệu |
-| [`docs/RESEARCH_FRAMING.md`](docs/RESEARCH_FRAMING.md) | Bài toán theo đề chính thức, research question, protocol, metric, luật chứng minh |
-| [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md) | Subset CIC18-Causal-Demo-v1: cửa sổ, vai trò, support, host overlap, giới hạn |
-| [`docs/MODEL_CARD_A0.md`](docs/MODEL_CARD_A0.md) | A0-CIC |
-| [`docs/RESULTS_MVP.md`](docs/RESULTS_MVP.md) | Kết quả run MVP |
-| [`docs/RESULTS_DECISION.md`](docs/RESULTS_DECISION.md) | Decision layer V1–V4b: dev (Bot, Web) và holdout DDoS |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Pipeline, ranh giới module, contract dữ liệu, bất biến |
+| [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md) (+ [bản sinh tự động](docs/EXPERIMENT_REGISTRY.generated.md)) | Mọi thí nghiệm: loại bằng chứng (DEV / EXP / HO), artifact, lệnh, commit |
+| [`docs/RESULTS_FINAL.md`](docs/RESULTS_FINAL.md) + [`docs/RESULTS_FINAL_ADDENDUM.md`](docs/RESULTS_FINAL_ADDENDUM.md) | Kết quả trên nhãn gốc; addendum về lỗi nhãn NF-v3 |
+| [`docs/FAMILY_AWARE_FINAL_REPORT.md`](docs/FAMILY_AWARE_FINAL_REPORT.md) | Family-aware: implementation, test, metric, giới hạn |
+| [`docs/CORRECTED_LABEL_AUDIT.md`](docs/CORRECTED_LABEL_AUDIT.md) · [`CORRECTED_LABEL_PILOT_RESULTS.md`](docs/CORRECTED_LABEL_PILOT_RESULTS.md) · [`DATA_SUFFICIENCY_DECISION.md`](docs/DATA_SUFFICIENCY_DECISION.md) | Nhãn sửa theo CNS2022, pilot, quyết định về dữ liệu |
+| [`docs/FP_LABEL_FORENSICS.md`](docs/FP_LABEL_FORENSICS.md) · [`MINORITY_INFORMATION_AUDIT.md`](docs/MINORITY_INFORMATION_AUDIT.md) · [`SOTA_METHOD_REVIEW.md`](docs/SOTA_METHOD_REVIEW.md) | Forensics FP và nhãn, giới hạn thông tin, review paper |
+| [`docs/RESEARCH_FRAMING.md`](docs/RESEARCH_FRAMING.md) · [`DATASET_CARD.md`](docs/DATASET_CARD.md) · [`MODEL_CARD_A0_v2.md`](docs/MODEL_CARD_A0_v2.md) | Đề bài và RQ; subset; model card |
+| [`docs/RESULTS_MVP.md`](docs/RESULTS_MVP.md) · [`RESULTS_DECISION.md`](docs/RESULTS_DECISION.md) · [`docs/history/`](docs/history/) | Kết quả lịch sử (MVP; decision layer và holdout DDoS) và các tài liệu đã bị thay thế |
+| [`docs/CLEANUP_MANIFEST.md`](docs/CLEANUP_MANIFEST.md) | Thay đổi cấu trúc repo |
 
-## Cấu trúc
-```text
-configs/demo.yaml        cửa sổ, vai trò, known class, threshold target, policy (chốt trước khi train)
-src/netirava/
-  cli.py                 python -m netirava <command>
-  config.py              load YAML, path, sha1
-  features.py            allowlist 49 feature, transform cố định, fingerprint, runtime contract (không nhãn)
-  dataset.py             inspect / prepare (stream.parquet không nhãn + truth.parquet) / audit
-  detectors.py           A0 (CatBoost) và Anomaly (IsolationForest), threshold trên calibration
-  replay.py              replay causal theo available_at, fast/paced, shadow cô lập
-  policy.py              candidate → incident theo entity, cooldown và budget theo event time
-  storage.py             run.json, detections.parquet, alerts.db (feedback append-only)
-  evaluation.py          evaluator (module duy nhất đọc nhãn), ablation imbalance
-  app.py                 giao diện triage (Streamlit): hàng incident, chi tiết, feedback, nhãn family-aware
-  relabel.py             nhãn sửa theo CNS2022 (truth_cns2022.parquet; nhãn gốc giữ nguyên)
-  pilot.py               pilot A0 trên nhãn đã sửa (3 seed) so với A0 v2
-  family.py              family-aware output (không đổi xác suất hay alert binary)
-  decision.py            decision layer offline: V1 A0, V2 anomaly, V3 OR, V4a/V4b entity + ablation, nhiều mức FPR
-tests/                   pipeline end-to-end trên dữ liệu tổng hợp
-```
-
-Ngoài git:
-- `datasets/` (dữ liệu gốc, chỉ đọc);
-- `artifacts/` (subset dẫn xuất, model);
-- `runs/` (các run replay).
-
-```mermaid
-flowchart LR
-  CSV[(Raw CSV, read-only)] -->|prepare| S[(stream.parquet, no labels)]
-  CSV -->|prepare| T[(truth.parquet, evaluator only)]
-  S --> R[replay: available_at order, 1 s tick]
-  R --> A0[A0 CatBoost, active] --> P[policy: threshold, cooldown, budget] --> DB[(alerts.db)]
-  R --> AN[IsolationForest, shadow] --> SP[shadow grouping, no budget] --> DB
-  A0 --> D[(detections.parquet)]
-  AN --> D
-  D --> E[evaluate]
-  T --> E
-```
-
-## Ranh giới (đều có test)
-- **Nhãn:** model input chỉ gồm 49 feature trong allowlist (giữ port, TTL, DNS id). Nhãn, role và scenario không bao giờ đi vào runtime; `features.flow_event_batch` từ chối các cột đó.
-- **Threshold và model chỉ học từ train/calibration:** đảo nhãn của dữ liệu replay không làm đổi threshold hay prediction.
-- **Prefix invariance:** prefix của stream cho kết quả giống hệt khi chạy cả stream. Thay đổi chunk size, hay chạy paced thay vì fast, không làm đổi kết quả.
-- **Shadow cô lập:** bật/tắt shadow, kể cả khi shadow lỗi, đều cho cùng `active_decisions_sha1`. Lỗi shadow làm run được đánh dấu `degraded`.
-- **Ngữ nghĩa score:** `attack_score = 1 − p(Benign)` là score để ra quyết định, không phải xác suất đã calibration. Không có fusion giữa hai nhánh.
-
-## Cài đặt và chạy (Windows, PowerShell)
+## Cài đặt
 ```powershell
 cd D:\Downloads\DataNova\Netirava
-uv sync
-.venv\Scripts\python.exe -m pytest -q
-
-$py = ".venv\Scripts\python.exe"
-& $py -m netirava inspect  --config configs/demo.yaml      # sha1, schema, hourly class counts
-& $py -m netirava prepare  --config configs/demo.yaml      # windows -> stream/truth/manifest
-& $py -m netirava audit    --config configs/demo.yaml      # host / fingerprint overlap, collisions
-& $py -m netirava train-a0 --config configs/demo.yaml --variant a0   # GPU; a1 = no SMOTE, a2 = SqrtBalanced
-& $py -m netirava ablate-imbalance --config configs/demo.yaml          # per-class (rare) metrics of a0/a1/a2
-& $py -m netirava train-anomaly --config configs/demo.yaml
-& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow            # fast
-& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow --pace paced --speed 60 --segments R1_0302_bot --max-events 30000
-& $py -m netirava score-calibration --config configs/demo.yaml
-& $py -m netirava decide --run <dev_run_id>                     # dev scenarios, all FPR levels
-& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow --segments H1_0220_ddos --unlock-holdout
-& $py -m netirava decide --run <holdout_run_id> --unlock-holdout # only after the method is frozen
-& $py -m netirava evaluate  --run <run_id>
-& $py -m netirava ui --run <run_id>                               # triage interface (http://localhost:8501)
-& $py -m netirava incidents --run <run_id> --limit 5
-& $py -m netirava feedback  --run <run_id> --alert-id 1 --status true_positive --source analyst --confirmed-by <name>
+uv sync                                   # Python 3.12; versions pinned in uv.lock
+.venv\Scripts\python.exe -m pytest -q     # 18 tests
 ```
-- Mỗi lần `replay` tạo một run mới tại `runs/<run_id>/`; đây cũng là cách resume duy nhất (không skip theo file đã tồn tại).
-- A0 kế thừa `../experiments/nextphase/configs.yaml` (NP-v1) nếu file đó tồn tại.
+- **Ngoài git:** `datasets/` (CSV gốc, chỉ đọc), `artifacts/` (subset dẫn xuất, model), `runs/` (các run).
+- **A0** kế thừa công thức NP-v1 từ `../experiments/nextphase/configs.yaml`.
+
+## Demo
+```powershell
+$py = ".venv\Scripts\python.exe"
+& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow                # A0 v2 (default model)
+& $py -m netirava ui --run <run_id>                                                 # http://localhost:8501
+& $py -m netirava export --run <run_id>                                             # runs/<run_id>/export/
+& $py -m netirava replay --config configs/demo.yaml --mode a0 --model pilot_cns/s0  # corrected-label pilot, separately
+```
+
+## Toàn bộ lệnh CLI
+`inspect` · `prepare` · `audit` · `relabel` · `train-a0 [--variant a0|a1|a2] [--seed N]` · `train-anomaly` · `score-calibration` · `replay [--mode a0|a0-shadow] [--pace fast|paced] [--model DIR] [--segments …] [--max-events N] [--unlock-holdout]` · `evaluate --run` · `decide --run [--select] [--unlock-holdout]` · `family-report --run [--segments …]` · `export --run` · `ablate-imbalance` · `minority-report` · `pilot-train` · `pilot-eval` · `registry` · `incidents --run` · `feedback --run --alert-id --status [--provenance]` · `ui --run`
+
+Mỗi lần `replay` tạo một run mới `runs/<run_id>/` gồm `run.json`, `detections.parquet` và `alerts.db`. Cách tái lập từng thí nghiệm có trong [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md).
+
+## Phạm vi claim
+- Chỉ là replay flow đã hoàn tất trong một testbed: **development evidence**.
+- Kết quả trên **holdout** (H1 DDoS, H2 DoS-Hulk) được đánh dấu riêng.
+- Nhãn NF-v3 có lỗi đã được xác định (xem forensics); mọi báo cáo đều ghi rõ dùng nhãn gốc hay nhãn đã sửa.
+- Không phải SOTA, không phải zero-day detection, không phải IPS.

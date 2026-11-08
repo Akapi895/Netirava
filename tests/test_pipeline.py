@@ -203,3 +203,48 @@ def test_relabel_rules_basic():
     assert list(a.label_corrected) == ["Portscan", "Benign", "Brute_Force_-XSS", "Benign", "Indeterminate", "FTP-BruteForce"]
     assert list(a.status) == ["confirmed", "unchanged", "confirmed", "background", "indeterminate", "not_audited"]
     assert list(a.label_original) == list(df.label_original)       # original labels kept
+
+
+def test_family_annotate_fields_and_scope():
+    from netirava.family import annotate, incident_labels
+    classes = ["Benign", "FTP", "Web", "XSS", "SQLi"]
+    P = np.array([[0.90, 0.05, 0.02, 0.02, 0.01],    # benign
+                  [0.05, 0.85, 0.05, 0.03, 0.02],    # outside the family
+                  [0.05, 0.02, 0.03, 0.50, 0.40],    # XSS share 0.54 -> uncertain
+                  [0.05, 0.02, 0.01, 0.90, 0.02]])   # XSS share 0.97 -> fine
+    P0 = P.copy()
+    a = annotate(P, classes, {"Web": ["Web", "XSS", "SQLi"]}, {"FTP": "BruteForce"}, 0.8)
+    assert np.array_equal(P, P0)
+    assert list(a["fine_label_status"]) == ["benign", "fine", "uncertain", "fine"]
+    assert list(a["predicted_family"]) == ["Benign", "BruteForce", "Web", "Web"]
+    assert a["fine_label"][0] == "Benign" and a["fine_label"][1] == "FTP" and a["fine_label"][3] == "XSS"
+    assert np.isclose(a["family_mass"][2], 0.93) and a["uncertainty_reason"][2]
+    df = pd.DataFrame({"incident_id": [1, 1, 2, 3], **{k: a[k] for k in ("predicted_family", "fine_label", "fine_label_status")}})
+    il = incident_labels(df)
+    assert il.loc[2, "fine_label_status"] == "uncertain" and il.loc[3, "fine_label"] == "XSS"
+
+
+def test_replay_family_columns_do_not_change_active_decisions(synth):
+    import copy
+    lo = copy.deepcopy(synth); lo["family"] = {"ambiguous": {"Atk": ["FTP-BruteForce"]}, "tau": 0.05}
+    hi = copy.deepcopy(synth); hi["family"] = {"ambiguous": {"Atk": ["FTP-BruteForce"]}, "tau": 0.99}
+    a = run(lo, mode="a0", run_id="fam_lo")
+    b = run(hi, mode="a0", run_id="fam_hi")
+    assert a["active_decisions_sha1"] == b["active_decisions_sha1"] and a["active"] == b["active"]
+    d = RunStore(synth, "fam_lo").detections()
+    for col in ("predicted_family", "fine_label", "fine_label_status", "fine_confidence", "family_mass"):
+        assert col in d.columns
+
+
+def test_flow_table_backward_compatible_with_old_runs(synth):
+    from netirava.triage import flow_table, incident_table, export
+    run(synth, mode="a0", run_id="oldstyle")
+    st = RunStore(synth, "oldstyle")
+    d = st.detections().drop(columns=["predicted_family", "fine_label", "fine_label_status", "fine_confidence",
+                                      "family_mass", "uncertainty_reason"])
+    st.write_detections(d)                                   # a run recorded before the integration
+    meta, ft = flow_table(synth, "oldstyle")
+    assert "fine_label" in ft.columns
+    meta, inc, _ = incident_table(synth, "oldstyle")
+    assert len(inc) == meta["active"]["incidents"]
+    assert export(synth, "oldstyle")["incidents"] == len(inc)

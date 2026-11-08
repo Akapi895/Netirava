@@ -14,7 +14,7 @@ def _print(obj):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="netirava")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report", "relabel", "pilot-train", "pilot-eval"):
+    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report", "relabel", "pilot-train", "pilot-eval", "registry"):
         p = sub.add_parser(name)
         p.add_argument("--config", default="configs/demo.yaml")
         if name == "train-a0":
@@ -28,6 +28,7 @@ def main(argv=None):
     p.add_argument("--segments", nargs="*", default=None)
     p.add_argument("--max-events", type=int, default=None)
     p.add_argument("--unlock-holdout", action="store_true", help="include the final holdout (only after the method is frozen)")
+    p.add_argument("--model", default="a0", help="model dir under artifacts/models, e.g. a0 (default) or pilot_cns/s0")
     p = sub.add_parser("decide")
     p.add_argument("--run", required=True)
     p.add_argument("--select", action="store_true", help="choose V4 (W, rho) on development scenarios")
@@ -46,6 +47,11 @@ def main(argv=None):
     p.add_argument("--corrects", type=int, default=None, help="feedback_id this entry corrects")
     p.add_argument("--provenance", default="analyst", choices=["analyst", "demo", "simulated_ground_truth"])
     p.add_argument("--config", default="configs/demo.yaml")
+    for name in ("export", "family-report"):
+        p = sub.add_parser(name)
+        p.add_argument("--run", required=True)
+        p.add_argument("--segments", nargs="*", default=None)
+        p.add_argument("--config", default="configs/demo.yaml")
     p = sub.add_parser("ui")
     p.add_argument("--run", required=True)
     p.add_argument("--port", default="8501")
@@ -76,7 +82,7 @@ def main(argv=None):
     elif a.cmd == "replay":
         from netirava.replay import run
         _print(run(cfg, mode=a.mode, pace=a.pace, speed=a.speed, segments=a.segments, max_events=a.max_events,
-                   unlock_holdout=a.unlock_holdout))
+                   unlock_holdout=a.unlock_holdout, model=a.model))
     elif a.cmd == "ablate-imbalance":
         from netirava.evaluation import ablate_imbalance
         r = ablate_imbalance(cfg)
@@ -84,6 +90,9 @@ def main(argv=None):
                     "rare": {c: (round(m["precision"], 3), round(m["recall"], 3), round(m["f1"], 3), m["support"])
                              for c, m in x["per_class"].items() if c in cfg["a0"]["rare_classes"]},
                     "delta_rare_vs_a0": x.get("delta_macro_f1_rare_vs_a0")} for v, x in r["variants"].items()})
+    elif a.cmd == "registry":
+        from netirava.registry import build
+        _print(build(cfg))
     elif a.cmd == "pilot-train":
         from netirava.pilot import train_pilot
         _print(train_pilot(cfg))
@@ -117,6 +126,16 @@ def main(argv=None):
         from netirava.storage import RunStore
         st = RunStore(cfg, a.run)
         _print(st.add_feedback(a.alert_id, a.status, a.source, a.confirmed_by, a.attack_label, a.corrects, a.provenance))
+    elif a.cmd == "export":
+        from netirava.triage import export
+        _print(export(cfg, a.run))
+    elif a.cmd == "family-report":
+        from netirava.evaluation import family_report
+        r = family_report(cfg, a.run, segments=a.segments)
+        _print({"invariance": r["invariance"],
+                **{lv: {"family": v["family"],
+                        "risk_coverage@0.8": {k: x for k, x in v["risk_coverage"].items() if k.endswith("@0.8")}}
+                   for lv, v in r["labels"].items()}})
     elif a.cmd == "ui":
         import subprocess
         from pathlib import Path

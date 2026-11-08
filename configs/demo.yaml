@@ -103,3 +103,6 @@ triage:                                     # v3, declared before the DoS-Hulk h
 final_system:                               # what the DoS-Hulk holdout evaluates (frozen with this commit)
   detector: A0 v2 (artifacts/models/a0), V1 decision at primary_alpha 0.001; other variants/levels reported
   triage: severity policy, B in incident_budgets_per_hour
+family:                                     # family-aware labelling (src/netirava/family.py); labels only, never probabilities
+  ambiguous: {Web: [Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]}
+  tau: 0.8                                  # fine web label only if its share of the Web family mass >= tau

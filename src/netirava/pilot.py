@@ -22,7 +22,7 @@ from netirava import features as F
 from netirava.dataset import load_stream, load_truth, training_frame
 from netirava.detectors import (A0, _StopAfterFirst, apply_smote, catboost_params, reference_recipe,
                                 threshold_at_fpr, wilson)
-from netirava.family import family_of, render
+from netirava.family import UNCERTAIN, render
 from netirava.relabel import W
 
 SPLIT = 0.6
@@ -162,7 +162,7 @@ def evaluate_pilot(cfg, taus=(0.6, 0.7, 0.8, 0.9)):
                     for lv, ycol, mask in (("original_labels", "label_original", gm), ("corrected_labels", "label_corrected", gm & keep_c)):
                         y = ev[ycol].to_numpy()[mask]
                         lab = render(P[mask], m.classes, fams, tau)
-                        in_fam_pred = np.isin(lab, rare) | (lab == "Web attack - fine class uncertain")
+                        in_fam_pred = np.isin(lab, rare) | (lab == UNCERTAIN.format(fam="Web"))
                         fine = np.isin(lab, rare)
                         yt_fam = np.isin(y, rare)
                         fa[f"{lv}@tau{tau}"] = {

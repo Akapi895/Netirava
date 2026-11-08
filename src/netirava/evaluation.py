@@ -367,3 +367,61 @@ def fp_profile(cfg, run_id, alpha=0.001, top=3):
                                 "top_pairs_share": {k: float(v / max(len(fp), 1)) for k, v in pairs.head(top).items()},
                                 "fp_pred_class": fp.a0_pred.value_counts().head(4).to_dict()}
     return out
+
+
+# --------------------------------------------------------------------------- family-aware report
+def family_report(cfg, run_id, taus=(0.5, 0.6, 0.7, 0.8, 0.9, 0.95), segments=None):
+    """Family-aware evaluation on one run (evaluator side): family-level P/R/F1 of each ambiguous family,
+    risk-coverage of the fine label over tau, invariance checks (alerts, non-family labels), under the
+    original labels and, if available, the CNS2022-corrected labels (attempted/indeterminate excluded).
+    Abstention lowers the number of wrong fine labels; it is not a detection-accuracy gain."""
+    from netirava import family as FA
+    st = RunStore(cfg, run_id)
+    meta = st.meta()
+    classes = meta["a0"]["classes"]
+    det = st.detections()
+    if segments:
+        det = det[det.segment.isin(segments)]
+    fams, tax, tau0 = FA.settings(cfg)
+    P = det[[f"p_{c}" for c in classes]].to_numpy(dtype=float)
+    am = np.asarray(classes, dtype=object)[P.argmax(1)]
+    alert = det.a0_score.to_numpy() >= meta["a0"]["threshold"]
+    truths = {"original": load_truth(cfg).set_index("flow_id")[F.LABEL]}
+    cp = K.path(cfg, "derived") / "truth_cns2022.parquet"
+    if cp.exists():
+        c = pd.read_parquet(cp).set_index("flow_id")
+        truths["corrected"] = c.label_corrected.where(~c.status.isin(["attempted", "indeterminate"]))
+    rep = {"run_id": run_id, "model": meta["a0"]["model_hash"], "rows": len(det), "segments": segments,
+           "tau_deployed": tau0, "families": fams, "invariance": {}, "labels": {}}
+    inside = np.zeros(len(det), bool)
+    for members in fams.values():
+        inside |= np.isin(am, members)
+    anns = {tau: FA.annotate(P, classes, fams, tax, tau) for tau in taus}
+    for tau, ann in anns.items():
+        rep["invariance"][str(tau)] = {
+            "alerts": int(alert.sum()),
+            "alerts_equal_stored_candidates": bool((alert == det.a0_candidate.to_numpy()).all()),
+            "non_family_rows_changed": int((ann["fine_label"][~inside] != am[~inside]).sum()),
+            "benign_argmax_rows_changed": int((ann["fine_label"][am == "Benign"] != "Benign").sum())}
+    for lv, tr in truths.items():
+        y = det.flow_id.map(tr).to_numpy(dtype=object)
+        keep = pd.notna(y)
+        out = {"rows_used": int(keep.sum()), "family": {}, "risk_coverage": {}}
+        for fname, members in fams.items():
+            pf, tf = np.isin(am, members) & keep, np.isin(y, members) & keep
+            tp = int((pf & tf).sum())
+            P_, R_ = tp / max(pf.sum(), 1), tp / max(tf.sum(), 1)
+            out["family"][fname] = {"support": int(tf.sum()), "predicted": int(pf.sum()), "precision": P_, "recall": R_,
+                                    "f1": 2 * P_ * R_ / (P_ + R_) if P_ + R_ else 0.0}
+            for tau, ann in anns.items():
+                fine = pf & (ann["fine_label_status"] == "fine")
+                out["risk_coverage"][f"{fname}@{tau}"] = {
+                    "coverage": float(fine.sum() / max(pf.sum(), 1)),
+                    "fine_accuracy_emitted": float((ann["fine_label"][fine] == y[fine]).mean()) if fine.any() else None,
+                    "wrong_fine_labels": int((fine & (ann["fine_label"] != y)).sum()),
+                    "wrong_fine_labels_argmax": int((pf & (am != y)).sum()),
+                    "uncertain": int((pf & (ann["fine_label_status"] == "uncertain")).sum())}
+        rep["labels"][lv] = out
+    name = "FAMILY_REPORT.json" if not segments else "FAMILY_REPORT_" + "_".join(segments) + ".json"
+    (st.dir / name).write_text(json.dumps(rep, indent=2, default=_js), encoding="utf-8")
+    return rep
