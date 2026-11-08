@@ -14,7 +14,7 @@ def _print(obj):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="netirava")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report", "relabel", "pilot-train", "pilot-eval", "registry", "eda", "fe-study", "fe-final", "ablate-clean", "inventory", "ledger"):
+    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report", "relabel", "pilot-train", "pilot-eval", "registry", "eda", "fe-study", "fe-final", "ablate-clean", "inventory", "ledger", "external"):
         p = sub.add_parser(name)
         p.add_argument("--config", default="configs/demo.yaml")
         if name == "train-a0":
@@ -143,6 +143,10 @@ def main(argv=None):
     elif a.cmd == "fe-study":
         from netirava.fstudy import run_study
         _print(run_study(cfg))
+    elif a.cmd == "external":
+        from netirava.external import run as ext
+        r = ext(cfg)
+        _print({"gate": {k: v["ok"] for k, v in r["gate"].items() if k.startswith("G")} | {"train": r["gate"]["train"]}})
     elif a.cmd == "ledger":
         from netirava.ledger import build, markdown
         led = build()

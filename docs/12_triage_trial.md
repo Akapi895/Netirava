@@ -27,6 +27,9 @@
 | Thời gian reviewer LLM | 17 s | 20 s |
 
 **Đọc kết quả:**
+- **Phát biểu sát nhất:** ở 20 lượt xem, workflow incident đưa ra năm source-defined attack episode, so với một của hàng flow. Không nên chuyển thành "phát hiện nhiều tấn công hơn 5 lần" hay "tăng hiệu suất analyst".
+- **Không cô lập được thành phần tạo ra khác biệt.** C0 và C1 khác nhau đồng thời ở đơn vị (flow hay incident), cách xếp hạng (score hay severity), lượng ngữ cảnh trên card và cách chọn theo thời điểm review. Kết quả thuộc về cả workflow, không quy riêng cho việc gom incident hay family-aware.
+- **Bốn nguồn HOIC thuộc cùng một kịch bản**, không phải bốn chiến dịch độc lập.
 - **Hàng flow theo score không đưa HOIC ra.** Flow HOIC chỉ có score khoảng 0.19 (vượt threshold 0.0092 nhưng thấp hơn nhiều flow benign hoặc dò port lẻ), nên không flow HOIC nào lọt vào top-4 của H5. Gom thành incident theo nguồn làm 4 nguồn HOIC, mỗi nguồn khoảng 44,000 flow tới cùng một đích trên port 80, đứng đầu hàng.
 - **Hàng flow tốn 4 lượt xem cho một nguồn** (cùng nguồn dò port 1). Hàng incident gộp nguồn đó thành một mục.
 - **2 báo nhầm của C1** là hai nguồn quét (một nguồn quét port 3391 trên 72 đích; một nguồn dò 4 port trên một đích), mang nhãn Benign trong NF-v3. Đây có thể là lỗi của reviewer, hoặc là quét nền Internet mà kịch bản CIC gắn Benign (`02` §4). Thử nghiệm không phân xử được.

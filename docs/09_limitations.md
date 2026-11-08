@@ -7,7 +7,7 @@ Trạng thái bằng chứng: **CM** đã đo và tái lập được; **TĐ** c
 2. **Họ tấn công lạ chỉ lộ ra ở FPR cao hơn.** Ở α = 0.1%: Bot 0/8 episode, LOIC-HTTP recall 0, LOIC-UDP gần 0. HOIC được pilot bắt 81% nhưng A0 v2 chỉ 4%.
 3. **FPR thay đổi theo ngày ở cùng threshold:** A0 v2 từ 0.037% tới 0.598% (nhãn gốc). Trên 6 cửa sổ chưa chạm (H3, H5–H9), FPR luôn ≤ 0.127%, nhưng mức dao động theo seed và theo ngày vẫn lớn.
 4. **Đơn vị gom incident còn thô.** Gom theo source IP không hợp với tấn công nhiều nguồn; gom theo campaign giúp nhưng gộp nhầm 5–7% incident benign (NO-GO).
-5. **Một testbed, mỗi lớp một episode, holdout đã dùng hết** (H1–H9). Không còn dữ liệu sạch trong dataset này để kiểm chứng phương pháp mới.
+5. **Một testbed, mỗi lớp một episode, holdout đã dùng hết** (H1–H9). Không còn dữ liệu sạch trong dataset này để kiểm chứng phương pháp mới. Model **không chuyển giao** sang NF-UNSW-NB15-v3: FPR 24–27% ở mục tiêu 0.1%, AUROC < 0.5 (`13`).
 
 ## 2. Theo nhóm
 | Nhóm | Hạn chế | Bằng chứng | Trạng thái |

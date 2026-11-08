@@ -1,6 +1,6 @@
 # Tài liệu Netirava
 
-Đọc theo thứ tự: `08` là báo cáo tổng, `10` là ledger số liệu; `01`–`07` và `11`–`12` là chi tiết; `09` là hạn chế.
+Đọc theo thứ tự: `08` là báo cáo tổng, `10` là ledger số liệu; `01`–`07` và `11`–`13` là chi tiết; `09` là hạn chế.
 
 | File | Nội dung |
 |---|---|
@@ -16,11 +16,13 @@
 | [`10_evidence_ledger.md`](10_evidence_ledger.md) | **Nguồn số duy nhất cho headline:** model và run cuối, bảng bằng chứng theo cohort (raw và dedup), đánh đổi, split thật, sửa đo lường |
 | [`11_ablation_and_cohorts.md`](11_ablation_and_cohorts.md) | Ablation imbalance sạch; kiểm kê cohort thiểu số trên toàn dataset |
 | [`12_triage_trial.md`](12_triage_trial.md) | Thử nghiệm triage nhỏ có đáp án tham chiếu (reviewer LLM, formative) |
+| [`13_external_evaluation.md`](13_external_evaluation.md) | Đánh giá ngoài trên NF-UNSW-NB15-v3 (model frozen), drift monitor trên môi trường mới, cổng cho lượt train cuối |
 | [`architecture.md`](architecture.md) | Pipeline, module, contract dữ liệu, bất biến |
 | [`experiment_registry.md`](experiment_registry.md) | Thí nghiệm, artifact, lệnh, commit; bảng sinh tự động ở [`experiment_registry_generated.md`](experiment_registry_generated.md) |
 | [`ops_change_audit.md`](ops_change_audit.md) | Audit training và inference invariance của ops study |
 | [`protocols/ops_study_prereg.md`](protocols/ops_study_prereg.md) | Pre-registration của ops study, giữ nguyên văn (commit `e1b473a`) |
 | [`protocols/evidence_round2_prereg.md`](protocols/evidence_round2_prereg.md) | Pre-registration của ablation sạch, kiểm kê cohort, thử nghiệm triage (commit `d368fdc`) |
+| [`protocols/external_round3_prereg.md`](protocols/external_round3_prereg.md) | Pre-registration của đánh giá ngoài và cổng train (commit `6ad5206`) |
 
 Pre-registration của feature study nằm trong `configs/fe_study.yaml` (commit `e820605`).
 

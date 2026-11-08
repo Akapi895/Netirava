@@ -35,6 +35,7 @@ Loại bằng chứng: **DEV** (phát triển, chọn), **EXP** (hậu nghiệm)
 | 17 | Kiểm kê cohort thiểu số | — | `runs/minority_inventory/` | `inventory` | `11` §2 | prereg `d368fdc` |
 | 18 | Thử nghiệm triage nhỏ (reviewer LLM) | EXP, formative | `runs/triage_trial/` | `task-make`, `task-score` | `12` | prereg `d368fdc` |
 | 19 | Ledger bằng chứng của hệ thống cuối | — | `runs/final_evidence/` | `ledger` | `10` | — |
+| 20 | Đánh giá ngoài NF-UNSW-NB15-v3 (model frozen) và cổng train; monitor exploratory | Đánh giá ngoài; EXP | `runs/external_unsw/` | `external` | `13` | prereg `6ad5206` |
 
 ## Bằng chứng ngoài repo
 | Giai đoạn | Vị trí |

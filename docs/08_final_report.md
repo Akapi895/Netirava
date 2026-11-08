@@ -15,8 +15,8 @@ Chi tiết từng phần nằm ở các tài liệu `01`–`07` và `11`–`12`;
 | Baseline bỏ sót gì | Ở FPR 0.1%, A0 bỏ sót Bot (0/8 episode), DDoS LOIC-HTTP (recall 0) và hầu hết HOIC (0.04). SQLi gần như luôn bị đoán thành XSS (222/290 flow). Với hàng FIFO (B incident mở đầu tiên mỗi giờ), 10 incident/giờ toàn là benign và cả 10 episode DDoS bị bỏ lỡ |
 | Nguyên nhân đo được | **Nhãn**: chỉ 6.9% flow web của NF-v3 là tấn công thật; 804 flow portscan bị gắn Benign. **Dữ liệu**: NF-v3 xuất phần lớn flow tấn công hai lần; mỗi lớp chỉ có một episode và một attacker. **Thông tin**: NetFlow không có payload HTTP để tách XSS với SQLi |
 | Xử lý | SMOTE theo quy tắc cho lớp hiếm; train trên nhãn sửa CNS2022; nhãn family-aware (không đoán bừa lớp mịn); gom alert thành incident có budget và hàng ưu tiên; thử correlation theo campaign và drift monitor |
-| Cải thiện bao nhiêu | Model cuối (nhãn sửa) so với baseline trên 5 cửa sổ chưa từng chạm: FPR 0.077% → 0.064% (đã loại trùng), false source incident 217 → 143, recall HOIC 4% → 81%. Family-aware giảm nhãn mịn sai 344 → 52 (trên A0 v2). Gom incident nén 243–1,024 lần; trong thử nghiệm nhỏ, hàng incident đưa ra 5 episode tấn công so với 1 của hàng flow |
-| Trả giá và giới hạn | Model cuối kém ở Infiltration (19.5% → 1.2%), portscan và FPR α = 0.5%; Bot vẫn 0. Lớp thiểu số chỉ có eval cùng episode (XSS 15, SQLi 2 sau khi loại trùng) và không còn cohort độc lập trong dataset. Ablation sạch không cho thấy SMOTENC hơn không xử lý hay class weighting. Correlation theo campaign gộp nhầm benign (NO-GO). Drift monitor chưa đủ bằng chứng |
+| Cải thiện bao nhiêu | Model cuối (nhãn sửa) so với baseline trên 5 cửa sổ chưa từng chạm: FPR 0.077% → 0.064% (đã loại trùng), false source incident 217 → 143, recall HOIC 4% → 81%. Family-aware giảm nhãn mịn sai 344 → 52 (trên A0 v2). Gom incident nén 243–1,024 lần; trong thử nghiệm nhỏ (20 lượt xem), workflow incident đưa ra 5 source-defined attack episode so với 1 của hàng flow |
+| Trả giá và giới hạn | Model cuối kém ở Infiltration (19.5% → 1.2%), portscan và FPR α = 0.5%; Bot vẫn 0. Lớp thiểu số chỉ có eval cùng episode (XSS 15, SQLi 2 sau khi loại trùng) và không còn cohort độc lập trong dataset. Lợi ích của SMOTENC trên nhãn gốc không tái hiện trên dữ liệu sạch, nên không quy cải thiện cho SMOTENC. Correlation theo campaign gộp nhầm benign (NO-GO). Drift monitor chưa đủ bằng chứng |
 
 ## 2. Các giai đoạn: đã thử gì, kết quả, quyết định
 ### 2.1 Dữ liệu và EDA ([`02_data_eda_labels.md`](02_data_eda_labels.md))
@@ -72,14 +72,21 @@ Pipeline cuối giữ **49 feature NetFlow v3** (không có IP, timestamp tuyệ
 | Gom incident theo source IP + cooldown 15 phút, budget theo giờ | Nén 243–1,024 lần; H1 DDoS: hàng ưu tiên phủ 10/10 episode với 10 incident/giờ, FIFO 0/10 (EXP) | Thành phần triage |
 | Hàng theo severity (khai báo trước) so với volume | Severity ≈ volume (episode@30: 0.311 so với 0.313) | Giữ severity; nay theo nhãn family-aware |
 | Correlation theo campaign (đích + họ, causal), campaign update mỗi giờ | HOIC: episode phủ 0.80 → 1.00, 46 → 5 mục trong 0.5 giờ (A0 v2); nhưng 6.9–7.0% incident benign bị gộp vào campaign tấn công (luật ≤ 5%) | **NO-GO**; chỉ là view thử nghiệm |
-| Thử nghiệm triage nhỏ có đáp án (reviewer LLM đã làm mù, 20 quyết định mỗi điều kiện) | Hàng incident đưa ra 5 episode và 2 loại tấn công (có HOIC); hàng flow theo score đưa ra 1 episode, 1 loại. Độ đúng 18/20 so với 20/20 | Formative; không phải bằng chứng tiết kiệm thời gian (`12`) |
+| Thử nghiệm triage nhỏ có đáp án (reviewer LLM đã làm mù, 20 quyết định mỗi điều kiện) | Ở 20 lượt xem, workflow incident đưa ra 5 source-defined attack episode (4 thuộc cùng kịch bản HOIC), hàng flow theo score đưa ra 1. Độ đúng 18/20 so với 20/20. Hai điều kiện khác nhau ở nhiều thành phần cùng lúc | Formative; không quy cho riêng thành phần nào (`12`) |
 
 ### 2.7 Drift monitoring ([`07_drift_monitoring.md`](07_drift_monitoring.md))
 | Đã thử | Kết quả | Quyết định |
 |---|---|---|
 | Monitor không nhãn theo cửa sổ 15 phút so với C1: tỷ lệ alert (AR), tỷ lệ đuôi dưới ngưỡng (TR), score PSI, feature PSI | Holdout mới gần như không có cửa sổ FPR > 2α. Trên holdout riêng, ρ(TR, FPR) = 0.06 [−0.45, 0.57] (pilot); chỉ khi gộp với DEV mới lên 0.56. Không báo trên giờ chỉ có benign | INCONCLUSIVE; chỉ báo trên UI, không phải ước lượng FPR |
 
-### 2.8 Hướng đã dừng
+### 2.8 Đánh giá ngoài trên NF-UNSW-NB15-v3 ([`13_external_evaluation.md`](13_external_evaluation.md))
+| Đã làm | Kết quả | Quyết định |
+|---|---|---|
+| Chấm model CIC frozen trên UNSW, threshold khóa trên C1 của CIC | FPR 24–27% (pilot) và 2.0% (A0 v2) ở mục tiêu 0.1%; AUROC tấn công so với benign 0.06–0.44 ở mọi lớp | Model CIC không chuyển giao; kết quả của Netirava chỉ đúng trong testbed CIC-2018 |
+| Drift monitor trên UNSW (exploratory, ngoài protocol) | 99/99 cửa sổ báo "threshold-reliability WARN" | Monitor nhận ra dịch chuyển môi trường lớn trước khi có nhãn |
+| Cổng cho lượt train cuối (G1–G6) | G1 không đạt (Worms 20 flow, Analysis 1 episode ở một phiên); G6 không đạt (cả hai phiên đã dùng để chọn recipe) | Không train; giữ lượt train |
+
+### 2.9 Hướng đã dừng
 | Hướng | Kết quả |
 |---|---|
 | GraphIDS / GNN | NO-GO (shortcut theo host) |
@@ -106,6 +113,7 @@ Audit thay đổi của ops study: training invariance PASS, inference invarianc
 | Family-aware giảm nhãn mịn sai | 344 → 52 | gốc | DEV | `05` §3 |
 | Gom incident giảm tải | nén 243–1,024 lần; 10/10 vs 0/10 episode DDoS | gốc | EXP | `06` §2 |
 | Correlation theo campaign | 46 → 5 mục trên HOIC, nhưng contamination 6.9% | gốc | HO, NO-GO | `06` §4 |
-| Drift monitor | ρ(TR, FPR) = 0.06 trên holdout (pilot); recall INCONCLUSIVE | sửa | HO | `07` §3 |
+| Drift monitor | ρ(TR, FPR) = 0.06 trên holdout (pilot); recall INCONCLUSIVE; báo 99/99 cửa sổ trên môi trường UNSW (exploratory) | sửa | HO; EXP | `07` §3, `13` §3 |
+| Chuyển giao sang môi trường khác | Model CIC frozen trên UNSW: FPR 24–27% ở mục tiêu 0.1%, AUROC < 0.5 | gốc UNSW | Đánh giá ngoài | `13` §2 |
 | Lớp thiểu số | XSS 15/15, SQLi 2/2 (pilot, within-episode); 0 cohort độc lập trong dataset | sửa | DEV | `10` §2, `11` §2 |
-| Thử nghiệm triage | Hàng incident: 5 episode, 2 loại tấn công; hàng flow: 1 episode, 1 loại (20 quyết định mỗi bên, reviewer LLM) | gốc / sửa | EXP, formative | `12` |
+| Thử nghiệm triage | 20 lượt xem: workflow incident 5 source-defined attack episode, hàng flow 1 (reviewer LLM; không cô lập thành phần) | gốc / sửa | EXP, formative | `12` |

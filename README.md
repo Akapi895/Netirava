@@ -16,14 +16,15 @@ Chi tiết và nguồn của từng số: [`docs/08_final_report.md`](docs/08_fi
 |---|---|---|
 | Nhãn web của NF-v3 phần lớn sai | 6.9% flow web là tấn công thật | Forensics |
 | FPR ở mục tiêu 0.1% trên ngày chưa từng chạm | 0.007–0.052% (H3); 0.026–0.127% (H5–H9) | Holdout |
-| SMOTE so với không xử lý mất cân bằng | Có lợi trên nhãn gốc; trên nhãn sửa và dữ liệu đã loại trùng thì không phân biệt được | DEV |
+| SMOTE so với không xử lý mất cân bằng | Lợi ích trên nhãn gốc không tái hiện trên nhãn sửa và dữ liệu đã loại trùng; không quy cải thiện cho SMOTENC | DEV |
 | Model cuối (nhãn sửa) so với baseline (nhãn gốc) | FPR 0.064% so với 0.077% (đã loại trùng); false incident 143 so với 217; HOIC 0.81 so với 0.04; Infiltration 0.012 so với 0.194 | Holdout (sau khi chọn) |
 | Lớp thiểu số | Đúng hết trên eval nhỏ cùng episode (XSS 15, SQLi 2); không còn cohort độc lập trong dataset | Chưa xác nhận được |
-| Thử nghiệm triage (reviewer LLM, 20 quyết định) | Hàng incident gặp 5 episode tấn công, hàng flow theo score gặp 1 | Formative |
+| Thử nghiệm triage (reviewer LLM, 20 lượt xem) | Workflow incident đưa ra 5 source-defined attack episode, hàng flow theo score đưa ra 1 | Formative |
 | Family-aware | Nhãn mịn sai 344 → 52, không đổi alert | DEV |
 | Gom incident | Nén 243–1,024 lần | DEV/EXP |
 | Correlation theo campaign | 46 → 5 mục trên HOIC, nhưng gộp nhầm 7% incident benign: NO-GO | Holdout |
-| Drift monitor | Chưa đủ bằng chứng (ρ = 0.06 trên holdout); chỉ hiển thị như chỉ báo | Holdout |
+| Drift monitor | Chưa đủ bằng chứng trên CIC (ρ = 0.06 trên holdout); báo 99/99 cửa sổ khi chạy trên môi trường UNSW | Holdout; exploratory |
+| Chuyển giao sang NF-UNSW-NB15-v3 (model frozen) | Không chuyển giao: FPR 24–27% ở mục tiêu 0.1%, AUROC < 0.5 | Đánh giá ngoài |
 
 ## Cài đặt
 ```powershell

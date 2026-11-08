@@ -9,7 +9,7 @@ Protocol khai báo trước: [`protocols/evidence_round2_prereg.md`](protocols/e
   - threshold trên benign của C1 (đã loại trùng).
 - **Code:** `src/netirava/ablation.py`. Kết quả: `runs/fe_study/ablation_clean.json`. Model: `artifacts/fe_study_v1/ablation_clean/`.
 - **Arm:** `none` (không xử lý), `cw` (`auto_class_weights = Balanced`), `smotenc` (luật A0: lớp < 1,000 row → 1,000).
-- **Support eval sau khi loại trùng:** web Benign 737, Web 27, **XSS 15**, SQLi 2; known FTP 40,890, SSH 28,598, Slowloris 7,344, GoldenEye 5,583.
+- **Support eval sau khi loại trùng:** web Benign 737, Web 27, XSS 15 (30 trước khi loại trùng: 15 row là bản sao y hệt của một row đứng trước, có thể mang nhãn khác), SQLi 2; known FTP 40,890, SSH 28,598, Slowloris 7,344, GoldenEye 5,583.
 
 ### 1.1 Kết quả (seed 0 / 1 / 2)
 | Metric | none | cw | smotenc | Kết luận theo luật (hơn ở cả 3 seed) |
@@ -35,6 +35,10 @@ Protocol khai báo trước: [`protocols/evidence_round2_prereg.md`](protocols/e
 | FPR H3 / H7 / H8, α = 0.1% | 0.01–0.03% | 0.01–0.06% | 0.01–0.07% |
 
 ### 1.2 Kết luận
+**Phát biểu dùng trong bài nộp:** lợi ích trước đây quan sát được trên nhãn gốc không tái hiện thành lợi ích rõ ràng trên các lớp hiếm sau khi xử lý nhãn và bản trùng; vì vậy Netirava không quy cải thiện của hệ thống cho SMOTENC. Đây không phải kết luận "SMOTENC không có tác dụng": dữ liệu sạch còn quá ít và quá dễ, nên cả ba arm gần chạm trần.
+
+**Cách đọc luật "hơn ở cả 3 seed":** đây là quy tắc kết luận mô tả đã khai báo trước, không phải kiểm định ý nghĩa thống kê. Ba seed không tạo thêm môi trường độc lập. Support ≥ 30 cũng không tự bảo đảm robustness. Chênh lệch F1 GoldenEye cỡ 0.001 không có ý nghĩa thực tiễn và không phải lý do để giữ SMOTENC.
+
 - **Trên điều kiện sạch, không có bằng chứng SMOTENC giúp lớp thiểu số hay giảm tải analyst.**
   - SMOTENC chỉ hơn ở cả 3 seed tại F1 GoldenEye (hơn `none` 0.0003–0.0008, hơn `cw` khoảng 0.04) và FPR H6 ở α = 1% so với `none` (EXP).
   - SMOTENC kém `cw` ở false incident R1 và recall HOIC, kém `none` ở recall Portscan α = 1%, ở cả 3 seed.
@@ -52,7 +56,7 @@ Protocol khai báo trước: [`protocols/evidence_round2_prereg.md`](protocols/e
 | Nhãn | Flow (sau khi loại trùng) | Ngày | Episode | Episode chưa dùng | Flow chưa dùng (dedup) | Credible (flow duy nhất) | Cohort đủ điều kiện |
 |---|---|---|---|---|---|---|---|
 | Brute_Force_-Web | 1,618 (1,618) | 22/02 | 771 (561 nguồn) | 0 | 0 | 115, đều đã dùng | 0 |
-| Brute_Force_-XSS | 480 (**20**) | 22/02 | 5 | 0 | 0 | 41, đều đã dùng | 0 |
+| Brute_Force_-XSS | 480 (20 theo chính sách giữ bản đầu tiên; xem bên dưới) | 22/02 | 5 | 0 | 0 | 41, đều đã dùng | 0 |
 | SQL_Injection | 440 (440) | 22/02 | 6 | 0 | 0 | 20, đều đã dùng | 0 |
 | Infilteration | 188,152 (115,805) | 28/02, 01/03 | 5,477 | 3,448 (72 có ≥ 30 flow) | 31,103 | Không có luật (nhãn gắn cờ) | 0 |
 | Bot | 207,703 (111,460) | 02/03 | 9 | 1 | 1 | Không có luật | 0 |
@@ -60,10 +64,16 @@ Protocol khai báo trước: [`protocols/evidence_round2_prereg.md`](protocols/e
 | DDoS LOIC-HTTP | 288,589 | 20/02 | 20 | 10 (đuôi 17:00) | 2,153 | Không có luật; cùng 10 attacker với H1 | 0 |
 | Các lớp khác (FTP, SSH, GoldenEye, Slowloris, Hulk, HOIC, LOIC-UDP) | — | Một ngày mỗi lớp | 1–10 | 0 | 0 | — | 0 |
 
-**Phát hiện mới về nhãn:**
-- **XSS:** 440/480 row là bản sao y hệt (cả timestamp và 49 feature) của một row mang nhãn web khác. Sau khi loại trùng chỉ còn 20 flow mang nhãn XSS.
-- **Web và SQLi:** tương tự ở 168 row Web và 272 row SQLi.
-- Một flow được NF-v3 xuất nhiều lần, mỗi lần một nhãn web khác nhau.
+**Xung đột nhãn giữa các bản trùng.** Fingerprint = hash của toàn bộ row (timestamp, IP, 49 feature), không gồm nhãn.
+
+| Nhãn | Row | Fingerprint duy nhất | Fingerprint cũng mang nhãn khác | Fingerprint chỉ mang nhãn này | Row còn lại sau chính sách "giữ bản đầu tiên" |
+|---|---|---|---|---|---|
+| Brute_Force_-Web | 1,618 | 1,618 | 168 | 1,450 | 1,618 |
+| Brute_Force_-XSS | 480 | 460 | 440 | 20 | 20 |
+| SQL_Injection | 440 | 440 | 272 | 168 | 440 |
+
+- Cùng một flow (trùng cả timestamp) được NF-v3 xuất nhiều lần với các nhãn web khác nhau. 440/460 fingerprint của XSS cũng xuất hiện dưới nhãn Web hoặc SQLi.
+- Cột cuối phụ thuộc thứ tự row trong file: với XSS, bản mang nhãn khác thường đứng trước nên bị giữ lại. Con số 20 vì vậy là hệ quả của chính sách giải quyết xung đột, **không** phải số flow XSS tồn tại. Số credible (41 fingerprint duy nhất) đếm riêng trong tập credible.
 - Trên toàn dataset, cặp attacker–victim web chỉ có flow vào ngày 22/02. Ngày 23/02 không có flow nào của cặp này, kể cả flow mang nhãn Benign.
 
 ### 2.1 Kết luận

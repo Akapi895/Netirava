@@ -109,4 +109,5 @@ Các cửa sổ không xếp thành chuỗi toàn cục train → calibration �
 | Pilot phát hiện 81% flow HOIC, A0 v2 4% | Phát hiện zero-day; gọi đúng tên HOIC |
 | Nhãn web NF-v3 phần lớn sai (6.9% credible) | Tiết kiệm thời gian analyst (thử nghiệm ở [`12`](12_triage_trial.md) chỉ là formative, reviewer là LLM) |
 | Gom incident nén flow thành incident 2–3 bậc độ lớn | Thích nghi (adaptation): feedback chỉ là nhật ký, monitor không đổi threshold |
+| Drift monitor báo động trên 99/99 cửa sổ khi model chạy trên môi trường UNSW (exploratory, `13`) | Model chạy được ở mạng khác mà không train và calibrate lại (FPR 24–27% trên UNSW) |
 | Family-aware giảm nhãn mịn sai 344 → 52 trên A0 v2 | Family-aware có lợi tăng thêm trên pilot (pilot không có lỗi nhãn mịn trên eval web) |

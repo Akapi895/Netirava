@@ -109,6 +109,16 @@ def run(cfg):
                        "used": g.used.any(), "used_flows": g.used.sum(), "in_train": g.in_train.any(),
                        "used_in": g.used_in.agg(lambda s: ",".join(sorted({w for v in s if v for w in v.split(",")})))})
     ep["eligible"] = ~ep.used & ~ep.in_train & (ep.credible_dedup >= 30)
+    # three distinct counts per label (fingerprint = full-row hash without the label):
+    #   unique fingerprints among the rows carrying the label; fingerprints also carried by another label;
+    #   rows kept after the conflict policy "keep the first copy in file order" (depends on row order)
+    fp_labels = a.groupby("h")[F.LABEL].agg(lambda s: frozenset(s))
+    fp_counts = {}
+    for lab, x in a.groupby(F.LABEL):
+        u = x.h.unique()
+        shared = sum(len(fp_labels[h]) > 1 for h in u)
+        fp_counts[lab] = {"rows": int(len(x)), "unique_fingerprints": int(len(u)), "fingerprints_shared_with_other_label": int(shared),
+                          "fingerprints_only_this_label": int(len(u) - shared), "rows_kept_after_keep_first_policy": int((~x.dup).sum())}
     summ = {}
     for lab, x in ep.groupby("label"):
         unused = x[~x.used]
@@ -123,7 +133,7 @@ def run(cfg):
     pair_days = a[((a[F.SRC] == WEB_ATT) & (a[F.DST] == WEB_VIC)) | ((a[F.SRC] == WEB_VIC) & (a[F.DST] == WEB_ATT))] \
         .groupby(["day", F.LABEL]).size().to_dict()
     out = {"csv_rows": int(n_rows), "attack_rows": int(len(a)), "attack_rows_exact_duplicates": int(a.dup.sum()),
-           "rows_whose_exact_copy_carries_another_label": conflict,
+           "rows_whose_exact_copy_carries_another_label": conflict, "fingerprint_counts": fp_counts,
            "credible_definition": "web label inside its own CNS2022 window, attacker-victim pair, TCP with port 80; "
                                   "counted as unique flows (by full-row hash)",
            "by_label": summ, "web_attacker_victim_pair_by_day_label_all_rows": dict(sorted(pair_all.items())),
