@@ -44,3 +44,13 @@ def test_replay_api_default_model_follows_final_system(synth, monkeypatch):
     cfg["final_system"] = {"model_dir": "a0"}
     R.run(cfg, mode="a0", run_id="fix_default2", max_events=200)
     assert seen[-1].replace("\\", "/").endswith("/a0")
+
+
+def test_ui_provenance_guard_detects_wrong_stream(synth):
+    from netirava.app import provenance_check
+    from netirava.replay import run
+    from netirava.storage import RunStore
+    run(synth, mode="a0", run_id="fix_prov", max_events=200)
+    meta = RunStore(synth, "fix_prov").meta()
+    assert provenance_check(synth, meta)[0]
+    assert not provenance_check(synth, {**meta, "stream_sha1": "0" * 40})[0]

@@ -72,7 +72,7 @@ Số triage lịch sử (`decision.triage_metrics`) không đổi vì `decision.
 
 ## 5. Đổi model mặc định
 - **Nguồn gốc:** pre-registration của ops study tự thêm RQ-M, một luật chọn model, vì holdout mới là đánh giá độc lập đầu tiên của pilot. Luật đạt, nên `final_system.model_dir` được đặt `pilot_cns/s0` và default của CLI được đổi theo.
-- **Phạm vi:** việc chọn model không thuộc yêu cầu "hai tính năng bổ trợ". Đây là thay đổi ngoài phạm vi; quyết định cuối thuộc người dùng.
+- **Phạm vi:** việc chọn model không thuộc yêu cầu "hai tính năng bổ trợ". Đây là thay đổi ngoài phạm vi; quyết định cuối thuộc người dùng. *Cập nhật 2026-11-09:* người dùng yêu cầu chốt một model và run cuối; `pilot_cns/s0` được chốt, ledger ở `10_evidence_ledger.md`.
 - **Ảnh hưởng:** đây là thay đổi duy nhất làm đổi output detection. Khi truyền `--model` tường minh, output giống `master`. Lệnh cũ không ghi `--model` giờ chạy pilot.
 - **Hoàn tác nếu cần:** xóa `final_system.model_dir`; CLI rơi về `a0`, không cần sửa code.
 
@@ -90,8 +90,8 @@ Số triage lịch sử (`decision.triage_metrics`) không đổi vì `decision.
 | FPR known / S1 gốc / S1 sửa / R1 | 0.037 / 0.598 / 0.105 / 0.081% | 0.027 / 0.109 / 0.093 / 0.012% | DEV |
 | FPR gộp H5–H9 | 0.085% | 0.065% | HO |
 | FPR α = 0.5%, H7 / H8 | 0.231 / 0.386% | 0.510 / 0.575% | HO |
-| Source incident báo nhầm/giờ: known / S1 / R1 | 2.7 / 41.0 / 5.6 | 4.5 / 16.0 / 11.4 | DEV |
-| Source incident báo nhầm/giờ, H5–H9 | 24.1 | 15.9 | HO |
+| False source incident (số đếm): known K1–K4 / S1 / R1 | 30 / 42 / 28 | 50 / 16 / 57 | DEV |
+| False source incident (số đếm), H5–H9, 4.5 giờ exposure | 217 | 143 | HO |
 | LOIC-UDP H4 | 0/10 episode | 9/10 episode | HO |
 
 H1 và H2 chưa được đánh giá với pilot (holdout đã dùng).

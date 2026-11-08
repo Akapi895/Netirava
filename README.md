@@ -16,12 +16,14 @@ Chi tiết và nguồn của từng số: [`docs/08_final_report.md`](docs/08_fi
 |---|---|---|
 | Nhãn web của NF-v3 phần lớn sai | 6.9% flow web là tấn công thật | Forensics |
 | FPR ở mục tiêu 0.1% trên ngày chưa từng chạm | 0.007–0.052% (H3); 0.026–0.127% (H5–H9) | Holdout |
-| SMOTE so với không xử lý mất cân bằng | Rare macro-F1 giảm khi bỏ SMOTE ở cả 3 seed | DEV |
-| Model train trên nhãn sửa so với nhãn gốc | FPR 0.065% so với 0.085%; HOIC 0.81 so với 0.04; Infiltration 0.012 so với 0.194 | Holdout |
+| SMOTE so với không xử lý mất cân bằng | Có lợi trên nhãn gốc; trên nhãn sửa và dữ liệu đã loại trùng thì không phân biệt được | DEV |
+| Model cuối (nhãn sửa) so với baseline (nhãn gốc) | FPR 0.064% so với 0.077% (đã loại trùng); false incident 143 so với 217; HOIC 0.81 so với 0.04; Infiltration 0.012 so với 0.194 | Holdout (sau khi chọn) |
+| Lớp thiểu số | Đúng hết trên eval nhỏ cùng episode (XSS 15, SQLi 2); không còn cohort độc lập trong dataset | Chưa xác nhận được |
+| Thử nghiệm triage (reviewer LLM, 20 quyết định) | Hàng incident gặp 5 episode tấn công, hàng flow theo score gặp 1 | Formative |
 | Family-aware | Nhãn mịn sai 344 → 52, không đổi alert | DEV |
 | Gom incident | Nén 243–1,024 lần | DEV/EXP |
-| Correlation theo campaign | 46 → 5 mục/giờ trên HOIC, nhưng gộp nhầm 7% incident benign: NO-GO | Holdout |
-| Drift monitor | Chưa đủ bằng chứng (INCONCLUSIVE); chỉ hiển thị như chỉ báo | DEV + holdout |
+| Correlation theo campaign | 46 → 5 mục trên HOIC, nhưng gộp nhầm 7% incident benign: NO-GO | Holdout |
+| Drift monitor | Chưa đủ bằng chứng (ρ = 0.06 trên holdout); chỉ hiển thị như chỉ báo | Holdout |
 
 ## Cài đặt
 ```powershell
@@ -33,7 +35,7 @@ Ngoài git: `datasets/` (CSV gốc, chỉ đọc), `artifacts/` (subset, model),
 ## Demo
 ```powershell
 $py = ".venv\Scripts\python.exe"
-& $py -m netirava replay --config configs/demo.yaml --mode a0                 # model: final_system.model_dir (hiện là pilot_cns/s0)
+& $py -m netirava replay --config configs/demo.yaml --mode a0                 # model cuối: final_system.model_dir = pilot_cns/s0
 & $py -m netirava replay --config configs/demo.yaml --mode a0 --model a0      # baseline A0 v2
 & $py -m netirava drift-reference --model pilot_cns/s0                        # một lần cho mỗi model
 & $py -m netirava drift-monitor --run <run_id>                                # tab "Threshold reliability"

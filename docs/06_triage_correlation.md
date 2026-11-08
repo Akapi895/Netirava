@@ -52,16 +52,19 @@ Protocol khai báo trước: [`protocols/ops_study_prereg.md`](protocols/ops_stu
 
 ## 4. Kết quả correlation
 ### 4.1 Holdout H5–H9 (α = 0.1%, severity, B = 10/giờ, nhãn gốc)
-| Model | Scenario | Đơn vị | Mục/giờ | Mục báo nhầm/giờ | Episode phủ (strict) | Contamination |
-|---|---|---|---|---|---|---|
-| A0 v2 | H5 HOIC | source | 46.0 | 36.0 | 0.80 | |
-| A0 v2 | H5 HOIC | campaign | 5.0 | 4.0 | 1.00 | 0.00 |
-| A0 v2 | H6 03-01 | source → campaign | 22.0 → 4.0 | 9.0 → 2.5 | 0.033 → 0.116 | 0.61 |
-| A0 v2 | H8 benign 02-20 | source → campaign | 39.0 → 5.0 | 39.0 → 5.0 | – | – |
-| A0 v2 | H9 02-28 tối | source → campaign | 37.5 → 6.0 | 37.0 → 5.5 | 0.00 → 0.05 | 0.05 |
-| Pilot | H5 HOIC | source → campaign | 24.0 → 7.0 | 14.0 → 6.0 | 1.00 → 1.00 | 0.57 |
+Số đếm trên toàn cửa sổ; exposure H5 = 0.5 giờ, H6–H9 = 1 giờ mỗi cửa sổ, tổng 4.5 giờ. Bản trước của bảng này chia cho số ô giờ có event (9 ô cho 4.5 giờ), nên các số "/giờ" cũ bị lệch; xem `10` §6.
 
-Gộp 9 giờ của holdout: A0 v2 28.2 → 4.6 mục/giờ, pilot 17.3 → 9.0. "Mục báo nhầm/giờ giảm" là giảm số lần mở một mục, không phải giảm false positive: FPR và số flow benign bị alert không đổi.
+| Model | Scenario | Mục: source → campaign | Mục báo nhầm: source → campaign | Episode phủ (strict) | Contamination |
+|---|---|---|---|---|---|
+| A0 v2 | H5 HOIC | 46 → 5 | 36 → 4 | 0.80 → 1.00 | 0.00 |
+| A0 v2 | H6 01/03 | 44 → 8 | 18 → 5 | 0.033 → 0.116 | 0.61 |
+| A0 v2 | H7 benign 16/02 | 11 → 6 | 11 → 6 | – | – |
+| A0 v2 | H8 benign 20/02 | 78 → 10 | 78 → 10 | – | – |
+| A0 v2 | H9 28/02 tối | 75 → 12 | 74 → 11 | 0.00 → 0.05 | 0.05 |
+| Pilot | H5 HOIC | 24 → 7 | 14 → 6 | 1.00 → 1.00 | 0.57 |
+| Pilot | H6 01/03 | 19 → 16 | 16 → 14 | 0.011 → 0.017 | 0.13 |
+
+Gộp H5–H9: A0 v2 254 → 41 mục (báo nhầm 217 → 36), pilot 156 → 81 (143 → 78). "Mục báo nhầm giảm" là giảm số lần mở một mục, không phải giảm false positive: FPR và số flow benign bị alert không đổi.
 
 | Luật | A0 v2 (nhãn gốc / sửa) | Pilot |
 |---|---|---|
@@ -81,7 +84,7 @@ Gộp 9 giờ của holdout: A0 v2 28.2 → 4.6 mục/giờ, pilot 17.3 → 9.0.
 | K1–K5, nhãn gốc, A0 v2 | Episode phủ 0.132 → 0.303, chủ yếu nhờ gộp các "episode web" mà phần lớn là nhãn sai |
 | K1–K5, nhãn sửa | Source 0.833, campaign update 0.833, open-once 0.667 |
 | S1, A0 v2 | Contamination 0.805 (nhãn gốc), 0.31 (nhãn sửa): cảnh báo sớm cho G3 |
-| H2 DoS-Hulk (EXP) | 4.5 → 1.5 mục/giờ, cùng phủ 1/1 episode, contamination 0 |
+| H2 DoS-Hulk (EXP) | 9 → 3 mục (báo nhầm 8 → 2) trên 0.5 giờ, cùng phủ 1/1 episode, contamination 0 |
 
 ## 5. Kết luận
 - Source incident là đơn vị mặc định của hàng xem xét (`ops.ui_default_unit`).

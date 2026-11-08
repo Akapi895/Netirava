@@ -28,10 +28,17 @@ Trạng thái bằng chứng: **CM** đã đo và tái lập được; **TĐ** c
 | Triage | Luật ưu tiên theo volume được đặt sau khi thấy FIFO thất bại (H1 là EXP) | `06` §2 | TĐ |
 | | Budget 10 và 30 mục/giờ là giả định; chưa có đánh giá với analyst thật; feedback không có vòng học lại (cố ý) | `06` | GT |
 | | Campaign: chỉ một holdout nhiều nguồn (HOIC) | `06` §4 | CM |
-| Drift | Quá ít cửa sổ FPR > 2α để đánh giá recall của monitor; α·TR không phải ước lượng FPR | `07` | TĐ |
+| Drift | Quá ít cửa sổ FPR > 2α để đánh giá recall của monitor; trên holdout riêng ρ(TR, FPR) = 0.06; α·TR không phải ước lượng FPR | `07` | TĐ |
+| Triage | Thử nghiệm triage chỉ có một reviewer LLM, 20 quyết định mỗi điều kiện; chưa có analyst người | `12` | TĐ |
+| Chọn model | Luật chọn pilot không có điều kiện bảo toàn lớp thiểu số, portscan hay Infiltration; H5–H9 sau khi dùng để chọn không còn là test chưa chạm | `10` §1 | CM |
 | Feature | Port, TTL, DNS id có thể là shortcut, nhưng bỏ chúng làm kết quả holdout kém hơn | `03` §3 | CM (HO) |
 | | G_ctx (ngữ cảnh theo host) hứa hẹn cho scan nhưng làm tăng FPR R1; chưa kiểm chứng | `03` §2 | GT |
-| Dữ liệu | NF-v3 xuất phần lớn flow tấn công hai lần; số đếm tấn công trong báo cáo trước khi loại trùng bị thổi phồng khoảng 2 lần | `02` §3 | CM |
+| Lớp hiếm | Ablation sạch (nhãn sửa, đã loại trùng) không phân biệt được không xử lý, class weighting và SMOTENC | `11` §1 | CM |
+| | Không còn cohort thiểu số độc lập, đáng tin, chưa dùng trong dataset | `11` §2 | CM |
+| Dữ liệu | 440/480 row XSS là bản sao y hệt của row mang nhãn web khác | `11` §2 | CM |
+| | Split là đánh giá theo cửa sổ hồi cứu, không phải train → calibration → tương lai; replay K5 chứa row train của pilot | `10` §4 | CM |
+| | Pilot, A0 v2 và ops study chưa loại bản trùng; FE study, ablation sạch và ledger đã loại (ledger báo cả hai) | `10` §5 | CM |
+| | NF-v3 xuất phần lớn flow tấn công hai lần; số đếm tấn công trong báo cáo trước khi loại trùng bị thổi phồng khoảng 2 lần | `02` §3 | CM |
 | | Nhãn sửa CNS2022 dùng xấp xỉ payload và chỉ có cho 3 ngày; 17,082 nhãn Infilteration thành indeterminate | `02` §6 | TĐ |
 | Vận hành | Export delay giả định bằng 0; chỉ replay, không có ingest nProbe hay streaming thật | `01` §4 | GT |
 | | Một cửa sổ calibration, không calibrate lại theo ngày | `04` §1 | CM |

@@ -30,6 +30,11 @@ Loại bằng chứng: **DEV** (phát triển, chọn), **EXP** (hậu nghiệm)
 | 12 | Feature study: EDA, preprocessing, nhóm feature; H3/H4 | DEV + HO | `artifacts/fe_study_v1/{eda,study}/`, `runs/fe_study/` | `eda`, `fe-study`, `fe-final` (`configs/fe_study.yaml`) | `02` §3, `03` | `e820605` → `b900099` (tag `fe-v2-frozen`) |
 | 13 | Ops study: correlation, drift monitor, chọn model; H5–H9 | DEV + EXP (H2) + HO | DEV `runs/20261108T190136_a0_fast`, `…190143…`; HO `runs/20261108T211051_a0_fast`, `…211057…`; `runs/ops_study/` | `drift-reference`, `ops-study`, `ops-go`, `ops-pool`, `ops-summary` (`configs/ops_holdout.yaml`) | `06`, `07`, `04` §6; protocol ở `protocols/ops_study_prereg.md` | `e1b473a` → `26fab5d` (tag `ops-v1-frozen`) |
 | 14 | Audit thay đổi của ops study | — | `runs/ops_study/AUDIT_INVARIANCE.json`, `runs/audit_ops_*` | `runs/ops_study/audit_inv.py` | `ops_change_audit.md` | — |
+| 15 | Sửa đo lường, provenance, UI | — | `runs/ops_study/holdout/GO.json` (bản trước: `GO_before_exposure_fix.json`) | `ops-study`, `ops-go` | `10` §6 | `e5168f8` |
+| 16 | Ablation imbalance sạch (none / cw / smotenc, 3 seed) | DEV + EXP | `runs/fe_study/ablation_clean.json`, `artifacts/fe_study_v1/ablation_clean/` | `ablate-clean --config configs/fe_study.yaml` | `11` §1 | prereg `d368fdc` |
+| 17 | Kiểm kê cohort thiểu số | — | `runs/minority_inventory/` | `inventory` | `11` §2 | prereg `d368fdc` |
+| 18 | Thử nghiệm triage nhỏ (reviewer LLM) | EXP, formative | `runs/triage_trial/` | `task-make`, `task-score` | `12` | prereg `d368fdc` |
+| 19 | Ledger bằng chứng của hệ thống cuối | — | `runs/final_evidence/` | `ledger` | `10` | — |
 
 ## Bằng chứng ngoài repo
 | Giai đoạn | Vị trí |

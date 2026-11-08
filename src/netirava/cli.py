@@ -14,7 +14,7 @@ def _print(obj):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="netirava")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report", "relabel", "pilot-train", "pilot-eval", "registry", "eda", "fe-study", "fe-final"):
+    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report", "relabel", "pilot-train", "pilot-eval", "registry", "eda", "fe-study", "fe-final", "ablate-clean", "inventory", "ledger"):
         p = sub.add_parser(name)
         p.add_argument("--config", default="configs/demo.yaml")
         if name == "train-a0":
@@ -74,6 +74,20 @@ def main(argv=None):
     p.add_argument("--tags", nargs="+", required=True)
     p.add_argument("--out", required=True)
     p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("task-make", help="blinded triage trial task from a run")
+    p.add_argument("--run", required=True)
+    p.add_argument("--out", required=True)
+    p.add_argument("--k", type=int, default=4)
+    p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("task-run", help="interactive, timed human session for one condition")
+    p.add_argument("--task", required=True)
+    p.add_argument("--cond", required=True, choices=["C0", "C1"])
+    p.add_argument("--reviewer", required=True)
+    p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("task-score", help="score verdict files against the reference answers")
+    p.add_argument("--task", required=True)
+    p.add_argument("--verdicts", nargs="+", required=True)
+    p.add_argument("--config", default="configs/demo.yaml")
     p = sub.add_parser("ui")
     p.add_argument("--run", required=True)
     p.add_argument("--port", default="8501")
@@ -129,6 +143,23 @@ def main(argv=None):
     elif a.cmd == "fe-study":
         from netirava.fstudy import run_study
         _print(run_study(cfg))
+    elif a.cmd == "ledger":
+        from netirava.ledger import build, markdown
+        led = build()
+        flows, cls = markdown(led)
+        out = K.path(cfg, "runs") / "final_evidence"
+        (out / "LEDGER_flows.md").write_text(flows, encoding="utf-8")
+        (out / "LEDGER_classes.md").write_text(cls, encoding="utf-8")
+        _print({n: s["model"] for n, s in led["systems"].items()})
+    elif a.cmd == "inventory":
+        from netirava.inventory import run as inv
+        r = inv(cfg)
+        _print({k: r[k] for k in ("attack_rows", "attack_rows_exact_duplicates", "by_label", "web_attacker_victim_pair_by_day_label_all_rows")}
+               | {"eligible_cohorts": len(r["eligible"])})
+    elif a.cmd == "ablate-clean":
+        from netirava.ablation import run as ablate
+        r = ablate(cfg)
+        _print({f"{x['arm']}_s{x['seed']}": x["rare_macro_f1_web_eval"] for x in r["runs"]})
     elif a.cmd == "fe-final":
         from netirava.fstudy import run_final
         _print(run_final(cfg))
@@ -196,6 +227,15 @@ def main(argv=None):
         from netirava.ops import pooled_drift
         r = pooled_drift(cfg, a.tags, a.out)
         _print({m: {k: v["go"] for k, v in x.items()} for m, x in r["drift"].items()})
+    elif a.cmd == "task-make":
+        from netirava.triage_task import make
+        _print(make(cfg, a.run, a.out, a.k))
+    elif a.cmd == "task-run":
+        from netirava.triage_task import run_interactive
+        _print({"decisions": run_interactive(a.task, a.cond, a.reviewer)})
+    elif a.cmd == "task-score":
+        from netirava.triage_task import score
+        _print(score(a.task, a.verdicts))
     elif a.cmd == "ui":
         import subprocess
         from pathlib import Path

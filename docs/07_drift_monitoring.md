@@ -23,6 +23,8 @@ TR nhìn vào khối flow ngay dưới threshold: dải này rộng gấp 9 lầ
 **Luật "hữu ích"** (α = 0.1%): ρ(TR, FPR) ≥ 0.5 với cận dưới CI > 0, và TR bắt ≥ 80% cửa sổ E với tỷ lệ báo giả ≤ 20%. Nếu có < 5 cửa sổ E, phần recall là INCONCLUSIVE.
 
 ## 3. Kết quả (α = 0.1%, nhãn sửa)
+Số chính là của **holdout riêng**. Pool DEV + holdout chỉ là phụ, vì DEV đã được xem nhiều lần.
+
 | Pool | Model | Cửa sổ | Cửa sổ E | ρ(TR, FPR) [CI 95%] | ρ(AR, FPR) [CI 95%] | TR báo trên cửa sổ không-E: chỉ benign / có tấn công | AR: chỉ benign / có tấn công |
 |---|---|---|---|---|---|---|---|
 | Holdout H5–H9 | A0 v2 | 18 | 0 | 0.33 [−0.25, 0.73] | 0.61 [0.09, 0.93] | 0.17 / 1.00 | 0.00 / 1.00 |
@@ -32,7 +34,7 @@ TR nhìn vào khối flow ngay dưới threshold: dải này rộng gấp 9 lầ
 
 - **Score PSI và feature PSI** không theo được FPR (ρ từ −0.19 đến 0.04 trên DEV + holdout) và không báo trên cửa sổ chỉ benign nào.
 - **AR** bắt cả 3 cửa sổ E của DEV (nhãn gốc) nhưng cũng báo trên phần lớn cửa sổ có tấn công: nó đo khối lượng alert, không tách được tấn công với FP.
-- **TR** là tín hiệu duy nhất đạt tiêu chí tương quan, và chỉ với pilot. Nó cũng báo trên cửa sổ có tấn công, vì dải dưới threshold chứa cả tấn công có score trung bình.
+- **TR:** trên holdout riêng, ρ = 0.33 (A0 v2) và **0.06 (pilot)**, CI đều chứa 0. Chỉ khi gộp với DEV, TR của pilot mới đạt tiêu chí tương quan (0.56), nên không dùng số gộp làm bằng chứng cảnh báo. Nó cũng báo trên cửa sổ có tấn công, vì dải dưới threshold chứa cả tấn công có score trung bình.
 - **α·TR không dùng được làm ước lượng FPR:** sai số trung vị 0.30 (A0 v2) và 0.58 (pilot) bậc log10; chỉ 48% và 20% cửa sổ nằm trong khoảng 2 lần FPR thực.
 
 ## 4. Kết luận

@@ -60,7 +60,8 @@ Web/XSS/SQLi được đưa vào known class (T5 train 12:00–17:00, K5 eval 17
 | SQL_Injection | 290 | 0.810 | 0.059 [0.037, 0.092] | 0.109 | 0.020 | 0.111 |
 | **Rare macro-F1** | | | | **0.469** | 0.421 | 0.458 |
 
-- **Ổn định qua 3 seed:** rare macro-F1 của A0 là 0.469 / 0.487 / 0.525 (TB 0.494). Bỏ SMOTE giảm ở cả 3 seed (−0.048, −0.061, −0.143), nhưng CI bootstrap theo source IP của seed 0 là [−0.162, +0.003]. So với SqrtBalanced: −0.010, −0.028, +0.059 (không nhất quán). Kết luận: SMOTE tốt hơn không xử lý, chưa tốt hơn class weight.
+- **Ổn định qua 3 seed:** rare macro-F1 của A0 là 0.469 / 0.487 / 0.525 (TB 0.494). Bỏ SMOTE giảm ở cả 3 seed (−0.048, −0.061, −0.143), nhưng CI bootstrap theo source IP của seed 0 là [−0.162, +0.003]. So với SqrtBalanced: −0.010, −0.028, +0.059 (không nhất quán).
+- **Giới hạn của kết luận này:** ablation trên dùng nhãn gốc (phần lớn nhãn web là nhiễu) và chưa loại trùng. Ablation sạch trên nhãn sửa và dữ liệu đã loại trùng ([`11_ablation_and_cohorts.md`](11_ablation_and_cohorts.md) §1) **không** cho thấy SMOTENC tốt hơn không xử lý hay class weighting.
 - **SQLi:** 222/290 flow bị đoán thành XSS. 82% flow XSS và 75% flow SQLi trong eval có fingerprint đã xuất hiện ở train dưới nhãn khác. Gộp theo họ Web: F1 0.851.
 - **Phát hiện binary** (threshold theo từng α):
 
@@ -90,12 +91,14 @@ Hệ thống v3 (A0 v2, α = 0.1%) khai báo ở `5e98876`, chạy một lần t
 
 Pilot gần như hoàn hảo trên nhãn sửa, nhưng đó là within-episode: cùng attacker, cùng cửa sổ, flow gần như lặp lại. XSS/SQLi: INCONCLUSIVE.
 
-| FP trên ngày khác (seed 0 / 1 / 2) | A0 v2 FPR | Pilot FPR | A0 v2 incident báo nhầm/giờ | Pilot incident báo nhầm/giờ |
+| FP trên ngày khác (seed 0 / 1 / 2) | A0 v2 FPR | Pilot FPR | A0 v2 incident báo nhầm/ô giờ¹ | Pilot incident báo nhầm/ô giờ¹ |
 |---|---|---|---|---|
 | S1, nhãn gốc | 0.598 / 0.350 / 0.158% | 0.109 / 0.052 / 0.107% | 44 / 38 / 36 | 18 / 17 / 18 |
 | S1, nhãn sửa | 0.105 / 0.068 / 0.074% | 0.093 / 0.016 / 0.096% | 42 / 36 / 34 | 16 / 15 / 16 |
 | R1 | 0.081 / 0.065 / 0.073% | 0.012 / 0.008 / 0.009% | 5.6 / 3.8 / 3.2 | 11.4 / 6.8 / 8.8 |
 | Known K1–K4 | 0.037 / 0.016 / 0.036% | 0.027 / 0.025 / 0.023% | 5.0 / 5.0 / 4.8 | 8.3 / 7.2 / 6.3 |
+
+¹ Số lịch sử của `pilot.py`: chia cho số ô giờ có event, không phải thời lượng quan sát. Tỷ lệ giữa hai model vẫn so sánh được; số đếm đúng ở `10` §2.
 
 - **Lợi ích:** FP theo flow giảm. Trên R1 giảm 7–9 lần.
 - **Cái giá:**
@@ -105,18 +108,18 @@ Pilot gần như hoàn hảo trên nhãn sửa, nhưng đó là within-episode: 
 - Trên H3/H4 (`03` §3): pilot có FPR H3 0.052% và bắt 9/10 episode LOIC-UDP ở α = 0.1%.
 
 ## 6. So sánh A0 v2 và pilot trên holdout mới H5–H9
-Luật chọn khai báo trước trong ops study ([`protocols/ops_study_prereg.md`](protocols/ops_study_prereg.md) §5): chọn pilot nếu FPR không cao hơn, source incident báo nhầm/giờ ≤ 1.5 lần, và recall HOIC ≥ A0 v2 − 0.05.
+Luật chọn khai báo trước trong ops study ([`protocols/ops_study_prereg.md`](protocols/ops_study_prereg.md) §5): chọn pilot nếu FPR không cao hơn, số source incident báo nhầm ≤ 1.5 lần, và recall HOIC ≥ A0 v2 − 0.05.
 
 | α = 0.1% | A0 v2 | Pilot |
 |---|---|---|
 | FPR gộp H5–H9 (913,211 benign) | 0.085% [0.080, 0.092] | 0.065% [0.060, 0.070] |
 | FPR H7 / H8 / H5 / H6 / H9 | 0.043 / 0.084 / 0.127 / 0.086 / 0.103% | 0.026 / 0.032 / 0.098 / 0.063 / 0.113% |
-| Source incident báo nhầm/giờ | 24.1 | 15.9 |
+| Source incident báo nhầm (4.5 giờ exposure) | 217 | 143 |
 | Recall HOIC (H5, 10 attacker) | 0.036 | 0.813 |
 | Recall Infilteration (H6, lớp nhãn gắn cờ) | 0.194 | 0.012 |
 | FPR ở α = 0.5%, H7 / H8 | 0.231 / 0.386% | 0.510 / 0.575% |
 
-Luật đạt, nên `configs/demo.yaml → final_system.model_dir` đang đặt `pilot_cns/s0`. Đây là **khuyến nghị**: việc chọn model nằm ngoài phạm vi ops study, và quyết định cuối thuộc người dùng ([`ops_change_audit.md`](ops_change_audit.md) §5). Bảng đánh đổi đầy đủ (lớp hiếm theo từng bộ nhãn, Bot, portscan) ở audit §5.2.
+Luật đạt, nên `configs/demo.yaml → final_system.model_dir` đặt `pilot_cns/s0`. Model này được chốt làm model cuối (2026-11-09). Ledger thống nhất, gồm số sau khi loại trùng và toàn bộ đánh đổi, ở [`10_evidence_ledger.md`](10_evidence_ledger.md). Sau khi loại trùng, FPR gộp là 0.064% so với 0.077%.
 
 ## 7. Chi phí (replay trên máy dev)
 | Thành phần | Chi phí |

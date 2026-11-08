@@ -183,13 +183,13 @@ def main():
     if not run_id:
         st.error("start with: python -m netirava ui --run <run_id>")
         return
-    cfg, meta, inc, det, camp = load(cfg_path, run_id)
-    ok, cfg_sha, run_sha = provenance_check(cfg, meta)
-    if not ok:
+    ok, cfg_sha, run_sha = provenance_check(K.load(cfg_path), RunStore(K.load(cfg_path), run_id).meta())
+    if not ok:     # checked before any table is built: a wrong config joins destinations from another stream
         st.error(f"Provenance mismatch: run {run_id} was replayed on stream {str(run_sha)[:12]}, but the opened config "
                  f"({cfg_path}) points to stream {str(cfg_sha)[:12]}. Open the run with the config it was replayed with "
                  "(e.g. configs/ops_holdout.yaml for H5-H9 runs).")
         return
+    cfg, meta, inc, det, camp = load(cfg_path, run_id)
     st.caption(f"run {run_id} · A0 {meta['a0']['model_hash']} ({meta['a0'].get('model_dir') or 'a0'}) · threshold "
                f"{meta['a0']['threshold']:.4g} · policy {meta['policy']['version']} (source IP, cooldown "
                f"{meta['policy']['cooldown_ms']//60000} min, budget {meta['policy']['budget_per_hour']}/h) · "

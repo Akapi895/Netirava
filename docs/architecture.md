@@ -51,6 +51,7 @@ Ba thành phần của giải pháp:
 | `eda.py`, `fe.py`, `fstudy.py` | EDA, pipeline feature, feature study | Có (chỉ inner-train) |
 | `evaluation.py`, `decision.py`, `ops.py` | Evaluator: theo scenario, ablation, decision layer V1–V4b, ops study | **Có** |
 | `relabel.py`, `pilot.py` | Nhãn sửa CNS2022; pilot trên nhãn sửa | Có |
+| `ablation.py`, `inventory.py`, `ledger.py`, `triage_task.py` | Ablation imbalance sạch; kiểm kê cohort; ledger bằng chứng; thử nghiệm triage có đáp án | Có (evaluator) |
 | `registry.py`, `cli.py` | Sinh registry; mọi lệnh `python -m netirava …` | — |
 
 ## 3. Contract của `detections.parquet` (một row mỗi flow)
@@ -77,7 +78,7 @@ Trên dữ liệu thật, A0 v2 cho cùng `active_decisions_sha1` (`1c7b4b31…`
 | Model | Thư mục | Ghi chú |
 |---|---|---|
 | A0 v2 | `artifacts/models/a0` | 8 known class, nhãn gốc, threshold 0.8679 |
-| Pilot | `artifacts/models/pilot_cns/s{0,1,2}` | Nhãn sửa; `s0` đang là `final_system.model_dir` (khuyến nghị, chờ chốt) |
+| Pilot | `artifacts/models/pilot_cns/s{0,1,2}` | Nhãn sửa; `s0` là model cuối (`final_system.model_dir`) |
 | A0 v1 | `artifacts/models_v1/a0` | 5 known class; cần cho run MVP và H1 |
 | Ablation | `a1*`, `a2*`, `a0_s1`, `a0_s2` | Không SMOTE, SqrtBalanced, seed khác |
 | Anomaly | `artifacts/models/anomaly` | IsolationForest, chỉ shadow |
