@@ -12,6 +12,13 @@ same predicted attack family:
   Two existing campaigns are never merged (no transitive blow-up, fully causal).
 - State resets at capture-segment boundaries. No label, no future flow is used.
 
+Review unit (deviation v2, recorded in docs/OPS_STUDY_RESULTS.md before the holdout): a campaign
+is a *case*; in every hour, the source incidents that open in that hour and belong to one campaign
+form one review item, a *campaign update*. A new attack that joins an old campaign is therefore
+reviewed in the hour it appears (the pre-registered "open-once" unit hid such attacks inside old
+campaigns on dev and is kept as a reported variant). Per hour, updates are a pure aggregation of
+that hour's source incidents, so they never outnumber them.
+
 The binary alert, the source incidents and the notification budget are unchanged: a
 campaign is only a coarser *review unit*. `review_queue` is the one queue function used
 for every unit (source incident or campaign), so comparisons differ only in the unit.
@@ -81,6 +88,15 @@ def assign(fl, cooldown_ms, key=("dst", "family")):
             cor.reset()
         out[i] = cor.step(int(t[i]), inc[i], dst[i], fam[i])
     return out
+
+
+def update_items(fl, campaign_col, src_col="src_incident", hour_ms=HOUR_MS):
+    """Campaign-update item id per alerted flow: (campaign, hour in which the flow's source incident opened).
+    1-based int64 ids, label-free and causal (a source incident's opening hour is known when it opens)."""
+    if fl.empty:
+        return np.zeros(0, np.int64)
+    open_h = fl.groupby(src_col).decision_at.transform("min").to_numpy(np.int64) // hour_ms
+    return pd.factorize(pd.MultiIndex.from_arrays([fl[campaign_col].to_numpy(), open_h]))[0].astype(np.int64) + 1
 
 
 def review_queue(fl, unit_col, budgets, policies=("fifo", "volume", "severity"), sev_col="severity", hour_ms=HOUR_MS):

@@ -6,7 +6,8 @@ flow_table:     every alerted flow (or all flows) with score, alert flag, A0 arg
 incident_table: active (A0) source incidents from alerts.db (source IP + cooldown; ids, grouping and the
                 runtime FIFO notification budget come from the replay policy) with the family-aware label,
                 family-aware severity (+ its source), campaign id and the hourly review-queue ranks.
-campaign_table: campaigns (source incidents linked by target host + family, netirava.campaign).
+campaign_table: campaign updates (source incidents linked by target host + family, netirava.campaign;
+                one review item = the source incidents that joined one campaign in one hour).
 `notified` = runtime FIFO budget decision; `queue_rank_<policy>` = position in the hourly review queue.
 They are different things and are shown separately. No ground-truth label is read.
 """
@@ -47,6 +48,11 @@ def flow_table(cfg, run_id, alerted_only=True):
         cid[m.to_numpy()] = C.assign(det[m].assign(src_incident=det.incident_id[m]), oc["cooldown_ms"], tuple(oc["key"]))
         det["campaign_id"] = cid
     det["src_incident"] = det.incident_id
+    if "campaign_id" in det.columns:
+        upd = np.zeros(len(det), np.int64)
+        m = (det.campaign_id > 0).to_numpy()
+        upd[m] = C.update_items(det[m], "campaign_id")
+        det["update_id"] = upd
     return meta, det
 
 
@@ -90,21 +96,31 @@ def incident_table(cfg, run_id):
 
 
 def campaign_table(cfg, run_id, det=None):
-    """Campaigns of a run with the same review-queue ranks as source incidents (label-free)."""
+    """Campaign updates of a run (one row = the source incidents that joined one campaign in one hour),
+    ranked by the same review queue as source incidents (label-free)."""
     if det is None:
         _, det = flow_table(cfg, run_id)
-    d = det[det.campaign_id > 0]
+    if "update_id" not in det.columns:
+        return pd.DataFrame()
+    d = det[det.update_id > 0]
     if d.empty:
         return pd.DataFrame()
-    tab = C.campaign_table(d)
-    items = _queue_ranks(d, "campaign_id")
+    tab = C.campaign_table(d, "update_id")
+    g = d.groupby("update_id")
+    tab["campaign_id"] = g.campaign_id.first()
+    cg = d.groupby("campaign_id")
+    tab["campaign_sources_total"] = tab.campaign_id.map(cg.entity.nunique())
+    tab["campaign_flows_total"] = tab.campaign_id.map(cg.size())
+    tab["campaign_opened_utc"] = tab.campaign_id.map(cg.decision_at.min()).pipe(
+        lambda x: pd.to_datetime(x, unit="ms", utc=True).dt.strftime("%m-%d %H:%M"))
+    items = _queue_ranks(d, "update_id")
     for p in ("fifo", "volume", "severity"):
         tab[f"queue_rank_{p}"] = items[f"rank_{p}"]
-    tab["severity"] = d.groupby("campaign_id").severity.max()
+    tab["severity"] = g.severity.max()
     tab["opened_utc"] = pd.to_datetime(tab["first"], unit="ms", utc=True).dt.strftime("%m-%d %H:%M:%S")
     tab["hour"] = pd.to_datetime(tab["first"], unit="ms", utc=True).dt.strftime("%m-%d %H:00")
     tab["duration_min"] = ((tab["last"] - tab["first"]) / 60000).round(1)
-    tab = tab.join(FA.incident_labels(d, "campaign_id")[["fine_label", "fine_label_status"]])
+    tab = tab.join(FA.incident_labels(d, "update_id")[["fine_label", "fine_label_status"]])
     return tab.reset_index().sort_values(["severity", "n_flows"], ascending=False).reset_index(drop=True)
 
 
@@ -114,7 +130,7 @@ def export(cfg, run_id):
     out = RunStore(cfg, run_id).dir / "export"
     out.mkdir(exist_ok=True)
     cols = ["flow_id", "segment", "entity", "dst", "available_at", "decision_at", "a0_score", "alert", "a0_pred",
-            "incident_id", "campaign_id", "severity", "severity_source"] + FA.FIELDS
+            "incident_id", "campaign_id", "update_id", "severity", "severity_source"] + FA.FIELDS
     det[[c for c in cols if c in det.columns]].to_parquet(out / "flows_alerted.parquet", index=False)
     inc.to_csv(out / "incidents.csv", index=False)
     camp = campaign_table(cfg, run_id, det)

@@ -76,6 +76,24 @@ def test_review_queue_is_shared_causal_and_budgeted():
     assert len(items) == 1 and sel[("fifo", 1)] == {9}
 
 
+def test_new_source_joining_old_campaign_is_a_new_review_item():
+    """Dev finding (K5): a real attack joining a campaign opened hours earlier must be reviewed in its own hour."""
+    rows = [(0, 1, "benign1", "V", "Web")] + [(k * 10 * MIN, 1, "benign1", "V", "Web") for k in range(1, 18)] +            [(2 * H + 30 * MIN, 2, "attacker", "V", "Web")]
+    d = _fl(rows)
+    d["campaign_id"] = C.assign(d, 15 * MIN)
+    assert d.campaign_id.nunique() == 1                       # the attacker joins the old campaign (same case)
+    d["upd"] = C.update_items(d, "campaign_id")
+    assert d.groupby("src_incident").upd.nunique().eq(1).all() and d.upd.nunique() == 2
+    d["severity"] = 4
+    items, sel = C.review_queue(d, "upd", budgets=[1])
+    att_item = d.loc[d.entity == "attacker", "upd"].iat[0]
+    assert att_item in sel[("severity", 1)]                   # reviewed in hour 2
+    _, sel_once = C.review_queue(d, "campaign_id", budgets=[1])
+    once = d[d.campaign_id.isin(sel_once[("severity", 1)])]
+    rev = items.review_at                                     # open-once unit: attacker flow is after its review time
+    assert (once[once.entity == "attacker"].decision_at > (0 // H + 1) * H).all()
+
+
 def test_uncertain_flow_never_gets_withheld_class_severity():
     cfg = {"triage": {"severity": {"SQL_Injection": 5, "Brute_Force_-XSS": 4, "Benign": 4, "FTP-BruteForce": 3}},
            "family": {"severity": {"Web": 4}}}
@@ -154,8 +172,8 @@ def test_ops_study_end_to_end_and_go_report(ops_cfg):
     lv = corr["ops_e2e"]["levels"]["0.01"]
     for sc, x in lv.items():
         r = x["original"]
-        assert set(r["units"]) == {"source", "campaign", "campaign_dst_only"}
-        assert r["units"]["campaign"]["items"] <= r["units"]["source"]["items"]
+        assert set(r["units"]) == {"source", "campaign", "campaign_open_once", "campaign_dst_only"}
+        assert r["units"]["campaign_open_once"]["items"] <= r["units"]["campaign"]["items"] <= r["units"]["source"]["items"]
     assert len(win) and "E" in win.columns
     g = go_report(ops_cfg, "t", benefit_scenario="unknown-bot")
     assert "GO" in g["correlation"]["a0"]["original"]

@@ -24,7 +24,7 @@ from netirava.detectors import wilson
 from netirava.storage import RunStore
 
 HOUR = C.HOUR_MS
-UNITS = ("source", "campaign", "campaign_dst_only")
+UNITS = ("source", "campaign", "campaign_open_once", "campaign_dst_only")   # campaign = v2 campaign updates (primary)
 
 
 def _js(o):
@@ -90,8 +90,11 @@ def alerted(cfg, det, thr, alpha):
         pairs = al[["src_incident", "incident_id"]].drop_duplicates()
         assert pairs.src_incident.is_unique and pairs.incident_id.is_unique, "offline incidents != runtime incidents"
     al["source"] = al.src_incident
-    al["campaign"] = C.assign(al, oc["cooldown_ms"], tuple(oc["key"]))
-    al["campaign_dst_only"] = C.assign(al, oc["cooldown_ms"], tuple(oc["ablation_keys"][0]))
+    al["campaign_id"] = C.assign(al, oc["cooldown_ms"], tuple(oc["key"]))            # the case (campaign identity)
+    al["campaign_open_once"] = al.campaign_id                                          # pre-registered v1 review unit
+    al["campaign"] = C.update_items(al, "campaign_id")                                 # v2: campaign updates per hour
+    al["campaign_id_dst_only"] = C.assign(al, oc["cooldown_ms"], tuple(oc["ablation_keys"][0]))
+    al["campaign_dst_only"] = C.update_items(al, "campaign_id_dst_only")
     return al
 
 
@@ -128,16 +131,21 @@ def unit_metrics(al, unit, ctx, budgets, policies):
 
 
 def correlation_quality(al):
-    src = al.groupby("source").agg(att=("att", "any"), ben=("ben", "any"), camp=("campaign", "first"))
-    camp_att = al.groupby("campaign").att.any()
+    src = al.groupby("source").agg(att=("att", "any"), ben=("ben", "any"), camp=("campaign_id", "first"),
+                                   upd=("campaign", "first"))
+    camp_att = al.groupby("campaign_id").att.any()
+    upd_att = al.groupby("campaign").att.any()
     ben_src = src[~src.att & src.ben]
     absorbed = ben_src.camp.map(camp_att).fillna(False)
-    g = al.groupby("campaign")
+    absorbed_upd = ben_src.upd.map(upd_att).fillna(False)
+    g = al.groupby("campaign_id")
     n_src = g.entity.nunique()
-    lab_n = al[al.att].groupby("campaign").lab.nunique()
+    lab_n = al[al.att].groupby("campaign_id").lab.nunique()
     return {"benign_only_source_incidents": int(len(ben_src)),
             "benign_source_incidents_in_attack_campaigns": int(absorbed.sum()),
             "contamination_share": float(absorbed.mean()) if len(ben_src) else 0.0,
+            "benign_source_incidents_in_attack_updates": int(absorbed_upd.sum()),
+            "contamination_share_update_items": float(absorbed_upd.mean()) if len(ben_src) else 0.0,
             "campaigns": int(g.ngroups), "multi_source_campaigns": int((n_src >= 2).sum()),
             "max_sources_per_campaign": int(n_src.max()) if len(n_src) else 0,
             "multi_source_campaigns_benign_only": int(((n_src >= 2) & ~camp_att.reindex(n_src.index, fill_value=False)).sum()),
@@ -177,6 +185,7 @@ def correlation_run(cfg, run_id, label_sets=("original", "corrected")):
     budgets, policies = oc["queue"]["budgets"], oc["queue"]["policies"]
     out = {"run_id": run_id, "model": meta["a0"]["model_hash"], "model_dir": meta["a0"].get("model_dir") or "a0",
            "levels": {}}
+    ctxs = {(sc, ls): scenario_context(g, labs[ls], cfg) for sc, g in det.groupby("scenario") for ls in label_sets if ls in labs}
     for alpha in oc["queue"]["alphas"]:
         al_all = alerted(cfg, det, thr[alpha], alpha)
         lv = {}
@@ -186,7 +195,7 @@ def correlation_run(cfg, run_id, label_sets=("original", "corrected")):
             for ls in label_sets:
                 if ls not in labs:
                     continue
-                truth, ctx = scenario_context(g, labs[ls], cfg)
+                truth, ctx = ctxs[(sc, ls)]
                 # left join: the queue never depends on labels; excluded rows are neither attack nor benign
                 al = al_s.join(truth, on="flow_id", how="left").rename(columns={F.LABEL: "lab", "is_attack": "att"})
                 al["ben"] = al.lab == "Benign"
@@ -407,3 +416,47 @@ def go_report(cfg, tag, benefit_scenario="holdout-ddos-hoic"):
         rep["model_rule"] = model_rule(by_model["a0"][0], by_model["pilot_cns/s0"][0], cfg)
     (d / "GO.json").write_text(json.dumps(rep, indent=1, default=_js), encoding="utf-8")
     return rep
+
+
+def summarize(cfg, tag, label_set="original", alphas=None, B=None, policy=None):
+    """Compact Markdown tables of runs/ops_study/<tag>/ (correlation per scenario and unit; drift per model)."""
+    d = K.path(cfg, "runs") / "ops_study" / tag
+    corr = json.loads((d / "CORRELATION.json").read_text(encoding="utf-8"))
+    drift = json.loads((d / "DRIFT.json").read_text(encoding="utf-8"))
+    pr = cfg["ops"]["queue"]["primary"]
+    B, policy = B or pr["budget"], policy or pr["policy"]
+    f = lambda x, n=3: "–" if x is None else (f"{x:.{n}f}" if isinstance(x, float) else str(x))
+    lines = [f"### Correlation ({tag}, labels: {label_set}, queue: {policy}@{B}/h)", "",
+             "| model | α | scenario | unit | items/h | false items/h | episode cov. strict | case | attack-flow cov. | "
+             "risk-w. cov. | attack types | contamination | benign FPR |", "|" + "---|" * 13]
+    for rid, r in corr.items():
+        for a, lv in r["levels"].items():
+            if alphas and float(a) not in alphas:
+                continue
+            for sc, x in lv.items():
+                y = x.get(label_set)
+                if not y:
+                    continue
+                q = y["correlation_quality"] or {}
+                for u in UNITS:
+                    m = y["units"][u]
+                    qq = m["queue"][f"{policy}@{B}"]
+                    lines.append(f"| {r['model_dir']} | {a} | {sc} | {u} | {f(m['items_per_hour'], 1)} | "
+                                 f"{f(m['false_items_per_hour'], 1)} | {f(qq.get('episode_coverage_strict'))} | "
+                                 f"{f(qq.get('episode_coverage_case'))} | {f(qq.get('attack_flow_coverage_case'))} | "
+                                 f"{f(qq.get('risk_weighted_coverage_strict'))} | {f(qq.get('attack_type_coverage_strict'))} | "
+                                 f"{f(q.get('contamination_share')) if u == 'campaign' else ''} | "
+                                 f"{f(y['flow']['benign_fpr'], 5) if u == 'source' else ''} |")
+    lines += ["", f"### Drift monitor ({tag})", "",
+              "| model | labels@α | windows | E | signal | Spearman [CI] | AUROC(E) | alarm recall E | false alarm non-E "
+              "(benign-only / attack) | alarms |", "|" + "---|" * 10]
+    for md, x in drift["drift"].items():
+        for k, v in x.items():
+            for s, m in v["signals"].items():
+                ci = m["spearman_ci95"]
+                lines.append(f"| {md} | {k} | {v['windows']} | {v['E_windows']} | {s} | {f(m['spearman'], 2)} "
+                             f"[{f(ci[0], 2) if ci else '–'}, {f(ci[1], 2) if ci else '–'}] | {f(m['auroc_E'], 2)} | "
+                             f"{f(m['alarm_recall_E'], 2)} | {f(m['false_alarm_rate_nonE'], 2)} "
+                             f"({f(m['false_alarm_rate_nonE_benign_only'], 2)} / {f(m['false_alarm_rate_nonE_attack'], 2)}) | "
+                             f"{m['alarms']} |")
+    return "\n".join(lines)

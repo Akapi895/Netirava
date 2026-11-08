@@ -84,19 +84,23 @@ def queue_tab(cfg, run_id, meta, inc, det, camp):
         st.caption("`notified` = runtime notification under the FIFO budget of the policy; the queue rank is the hourly "
                    "review order chosen in the sidebar. They can differ.")
     else:
-        show = ["campaign_id", rank, "hour", "severity", "n_flows", "n_sources", "n_source_incidents", "n_targets",
-                "top_target", "family", "fine_label", "sources", "max_score", "opened_utc", "duration_min", "segment"]
+        show = ["update_id", "campaign_id", rank, "hour", "severity", "n_flows", "n_sources", "n_source_incidents",
+                "campaign_sources_total", "campaign_opened_utc", "n_targets", "top_target", "family", "fine_label", "sources",
+                "max_score", "opened_utc", "duration_min", "segment"]
+        st.caption("One row = a campaign update: the source incidents that joined one campaign in this hour. "
+                   "A new source that joins an old campaign is reviewed in the hour it appears.")
     st.subheader(f"Queue ({len(v):,} {unit}s)")
     st.dataframe(v[[c for c in show if c in v.columns]], width="stretch", hide_index=True, height=360)
     if v.empty:
         return
-    key = "alert_id" if unit == "source incident" else "campaign_id"
+    key = "alert_id" if unit == "source incident" else "update_id"
     sel = st.selectbox(f"Open {unit} ({key})", v[key].astype(int).tolist())
     row = v[v[key] == sel].iloc[0]
-    col = "incident_id" if unit == "source incident" else "campaign_id"
+    col = "incident_id" if unit == "source incident" else "update_id"
     item = int(row.incident_id) if unit == "source incident" else int(sel)
     title = (f"Incident {item} — {row.entity} · {row.fine_label} · {int(row.n_flows):,} flows" if unit == "source incident"
-             else f"Campaign {item} — {int(row.n_sources)} sources → {row.top_target} · {row.family} · {int(row.n_flows):,} flows")
+             else f"Campaign {int(row.campaign_id)} update {item} — {int(row.n_sources)} new sources this hour "
+                  f"({int(row.campaign_sources_total)} in campaign) → {row.top_target} · {row.family} · {int(row.n_flows):,} flows")
     st.subheader(title)
     if row.fine_label_status == "uncertain":
         st.info(f"Fine class withheld (top web class below tau = {cfg.get('family', {}).get('tau', 0.8)} of the Web family "
@@ -108,8 +112,8 @@ def queue_tab(cfg, run_id, meta, inc, det, camp):
     b.bar_chart(fl.fine_label.value_counts())
     b.write(f"**Sources:** {fl.entity.nunique()} · **targets:** {fl.dst.nunique()} · **dst ports:** {fl[F.DPORT].nunique()}")
     b.caption("Evidence = flow facts and policy reasons; scores are decision scores, not calibrated probabilities.")
-    alert_ids = (inc.loc[inc.campaign_id == item, "alert_id"].astype(int).tolist() if unit == "campaign"
-                 else [int(row.alert_id)])
+    alert_ids = (inc.loc[inc.incident_id.isin(det.loc[det.update_id == item, "incident_id"].unique()), "alert_id"]
+                 .astype(int).tolist() if unit == "campaign" else [int(row.alert_id)])
     with st.form("fb"):
         stt = st.radio("Verdict", ["true_positive", "false_positive", "uncertain"], horizontal=True)
         lab = st.text_input("Attack label (optional)")
@@ -163,7 +167,7 @@ def main():
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Alerted flows", f"{int(inc.n_flows.sum()):,}")
     c2.metric("Source incidents", f"{len(inc):,}")
-    c3.metric("Campaigns", f"{len(camp):,}")
+    c3.metric("Campaigns (updates)", f"{camp.campaign_id.nunique() if len(camp) else 0:,} ({len(camp):,})")
     c4.metric("Flows per incident", f"{inc.n_flows.sum() / max(len(inc), 1):,.0f}")
     c5.metric("Rare-class incidents", f"{int(inc.rare_class.sum()):,}")
     t1, t2 = st.tabs(["Review queue", "Threshold reliability"])

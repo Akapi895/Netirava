@@ -66,6 +66,10 @@ def main(argv=None):
     p.add_argument("--tag", required=True)
     p.add_argument("--benefit-scenario", default="holdout-ddos-hoic")
     p.add_argument("--config", default="configs/demo.yaml")
+    p = sub.add_parser("ops-summary", help="Markdown tables of an ops-study result")
+    p.add_argument("--tag", required=True)
+    p.add_argument("--labels", default="original", choices=["original", "corrected"])
+    p.add_argument("--config", default="configs/demo.yaml")
     p = sub.add_parser("ui")
     p.add_argument("--run", required=True)
     p.add_argument("--port", default="8501")
@@ -178,6 +182,12 @@ def main(argv=None):
     elif a.cmd == "ops-go":
         from netirava.ops import go_report
         _print(go_report(cfg, a.tag, a.benefit_scenario))
+    elif a.cmd == "ops-summary":
+        from netirava.ops import summarize
+        txt = summarize(cfg, a.tag, a.labels)
+        out = K.path(cfg, "runs") / "ops_study" / a.tag / f"SUMMARY_{a.labels}.md"
+        out.write_text(txt, encoding="utf-8")
+        sys.stdout.buffer.write((txt + chr(10)).encode("utf-8"))
     elif a.cmd == "ui":
         import subprocess
         from pathlib import Path
