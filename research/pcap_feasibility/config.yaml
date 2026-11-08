@@ -1,0 +1,70 @@
+# RQ-PCAP feasibility study: protocol locked BEFORE any data download or evaluation.
+# Any change after the pre-registration commit must be logged in PCAP_FEASIBILITY_RESULTS.md (deviations section).
+
+study: rq_pcap_v1
+dataset: IoT-23 (Stratosphere Lab, CTU)  # NOT NF-CSE-CIC-IDS2018-v3; results do not transfer to Netirava automatically
+base_url: https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios
+
+budget:
+  max_captures: 3
+  max_download_mb: 200
+
+# Selection criteria (fixed before download; uses only listing sizes + README, no labels / results):
+#  (1) pcap + labeled Zeek conn.log both available; (2) total download fits the budget;
+#  (3) different malware families, so leave-one-capture-out tests a family unseen in training;
+#  (4) 20-1 surveyed first, as requested.
+captures:
+  - id: CTU-IoT-Malware-Capture-34-1   # Mirai,  pcap 120M, conn.log.labeled 2.8M
+    pcap: 2018-12-21-15-50-14-192.168.1.195.pcap
+  - id: CTU-IoT-Malware-Capture-8-1    # Hakai,  pcap 2.0M, conn.log.labeled 1.4M
+    pcap: 2018-07-31-15-15-09-192.168.100.113.pcap
+  - id: CTU-IoT-Malware-Capture-20-1   # Torii,  pcap 3.9M, conn.log.labeled 410K
+    pcap: 2018-10-02-13-12-30-192.168.100.103.pcap
+
+join:
+  key: [proto, orig_h, orig_p, resp_h, resp_p]   # both directions tried; Zeek uid is the flow identity
+  time_tolerance_s: 1.0                          # packet t must be in [ts - tol, ts + duration + tol]
+  ambiguity: nearest_start                       # several candidate flows -> nearest ts; counted as ambiguous
+  unmatched_flows: keep_with_missing_B           # never dropped; b_missing indicator reported
+
+features:
+  # A: Zeek conn.log (closest analogue to NetFlow available for IoT-23)
+  A: [duration, orig_bytes, resp_bytes, missed_bytes, orig_pkts, orig_ip_bytes, resp_pkts, resp_ip_bytes,
+      proto, conn_state, resp_p]
+  # B: computed from the pcap only (see src/extract.py). No raw payload bytes, no names/strings as tokens.
+  B_groups: [pkt_size_dist, timing, tcp_flags, first_n_sizes, dns_meta, http_meta, tls_meta, ssh_meta, payload_stats, zeek_service]
+  first_n: 5
+  excluded_always: [ts, uid, orig_h, resp_h, orig_p, local_orig, local_resp, history, tunnel_parents, label,
+                    detailed_label, capture_id, ip_ttl, ip_id, tcp_window, dns_qname_text, http_host_text,
+                    http_uri_text, user_agent_text, tls_sni_text]
+  # orig_p (ephemeral) excluded: often a host/OS artefact. TTL/IP-ID/window excluded: OS-fingerprint shortcuts.
+
+model:
+  name: catboost
+  params: {iterations: 500, depth: 6, learning_rate: 0.1, loss_function: Logloss, task_type: CPU, verbose: 0,
+           thread_count: 8}
+  seeds: [0, 1, 2]
+  hpo: false
+
+evaluation:
+  primary:          # leave-one-capture-out (LOCO), binary Benign vs Malicious
+    split: loco
+    calibration: last 30% (by ts) of each training capture; model fit on the first 70%
+    fpr_targets: [0.001, 0.01]     # 0.1% is the priority constraint
+    min_benign_for_fpr: {0.001: 3000, 0.01: 300}   # below -> INSUFFICIENT SUPPORT at that level
+  secondary:        # EXPLORATORY: within-capture temporal split, pooled captures, multiclass on detailed-label
+    split: first 60% by ts train / last 40% test, per capture
+    min_class_support: 20          # classes below this in train or test are reported, not scored
+  controls:
+    - A_plus_noise      # A + |B| Gaussian noise columns (feature-count effect)
+    - A_plus_permuted_B # A + B with rows permuted within each split (keeps marginals, kills information)
+    - capture_identifiability   # can A / B / C predict capture_id? (shortcut indicator)
+  incidents: {entity: orig_h, cooldown_s: 900}
+
+decision_rule:   # fixed before evaluation
+  GO: >-
+    C beats A on LOCO recall at the locked FPR (or PR-AUC when FPR level is INSUFFICIENT) in >= 2 of 3 folds,
+    mean delta over seeds > 0 and larger than seed spread; C also beats A_plus_noise and A_plus_permuted_B;
+    benign FPR of C not higher than A; gain not driven by a single capture-identifying feature.
+  NO-GO: C does not beat A (delta <= 0 or within seed noise) in >= 2 of 3 folds with sufficient support.
+  INCONCLUSIVE: folds disagree, support insufficient, or gain explained by controls / shortcuts.
