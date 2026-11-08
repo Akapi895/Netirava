@@ -76,10 +76,13 @@ def incident_labels(df, incident_col="incident_id"):
     d = df[df[incident_col] > 0]
     if d.empty:
         return pd.DataFrame(columns=["predicted_family", "fine_label", "fine_label_status", "share_uncertain"])
-    g = d.groupby(incident_col)
-    top = g.fine_label.agg(lambda s: s.value_counts().index[0])
-    fam = g.predicted_family.agg(lambda s: s.value_counts().index[0])
-    unc = g.fine_label_status.agg(lambda s: float((s == "uncertain").mean()))
+    # joint mode of the (family, fine_label) pair, so the two fields always come from the same flows
+    # (independent modes could pair e.g. family Web with fine label DoS_attacks-GoldenEye); ties -> first seen
+    pair = d.groupby([incident_col, "predicted_family", "fine_label"], sort=False).size().rename("n").reset_index()
+    pair = pair.sort_values([incident_col, "n"], ascending=[True, False], kind="stable").drop_duplicates(incident_col)
+    pair = pair.set_index(incident_col)
+    top, fam = pair.fine_label, pair.predicted_family
+    unc = d.groupby(incident_col).fine_label_status.agg(lambda s: float((s == "uncertain").mean()))
     st = np.where(top.str.contains("fine class uncertain"), "uncertain", np.where(top == BENIGN, "benign", "fine"))
     return pd.DataFrame({"predicted_family": fam, "fine_label": top, "fine_label_status": st, "share_uncertain": unc})
 

@@ -43,17 +43,33 @@ def load_monitor(cfg_path, run_id):
     return pd.read_parquet(p) if p.exists() else None
 
 
-def flows_of(cfg, det, col, item_id, limit=200):
-    ids = det.loc[det[col] == item_id, "flow_id"].to_numpy()[:limit]
+def flows_of(cfg, det, col, item_id, upto=None, limit=200):
+    """Flows of one review item in decision order. upto (ms): only flows decided up to that time (the
+    evidence the review queue saw). Returns (first `limit` rows, summary over ALL selected flows)."""
+    sel = det[det[col] == item_id].sort_values("decision_at", kind="stable")
+    n_life = len(sel)
+    if upto is not None:
+        sel = sel[sel.decision_at <= upto]
+    summary = {"n_lifetime": n_life, "n_selected": len(sel), "n_shown": min(limit, len(sel)),
+               "labels": sel.fine_label.value_counts(), "sources": sel.entity.nunique(), "targets": sel.dst.nunique()}
+    ids = sel.flow_id.to_numpy()[:limit]
     cols = ["flow_id", F.DPORT, "PROTOCOL", "L7_PROTO", "IN_BYTES", "OUT_BYTES", "FLOW_DURATION_MILLISECONDS"]
     s = pq.read_table(K.path(cfg, "derived") / "stream.parquet", columns=cols,
                       filters=[("flow_id", "in", ids.tolist())]).to_pandas()
-    d = det[det.flow_id.isin(ids)][["flow_id", "decision_at", "entity", "dst", "a0_score", "a0_pred", "fine_label",
+    d = sel[sel.flow_id.isin(ids)][["flow_id", "decision_at", "entity", "dst", "a0_score", "a0_pred", "fine_label",
                                     "fine_label_status", "fine_confidence", "severity", "severity_source", "incident_id",
                                     "active_action", "active_reason"]]
-    out = d.merge(s, on="flow_id")
+    out = d.merge(s, on="flow_id").sort_values("decision_at", kind="stable")
+    summary["dst_ports"] = out[F.DPORT].nunique()
     out["time_utc"] = pd.to_datetime(out.decision_at, unit="ms", utc=True).dt.strftime("%H:%M:%S")
-    return out.drop(columns=["decision_at"])
+    return out.drop(columns=["decision_at"]), summary
+
+
+def provenance_check(cfg, meta):
+    """The run must have been replayed on the derived data the opened config points to."""
+    import json
+    man = json.loads((K.path(cfg, "derived") / "manifest.json").read_text(encoding="utf-8"))
+    return man.get("stream_sha1") == meta.get("stream_sha1"), man.get("stream_sha1"), meta.get("stream_sha1")
 
 
 def queue_tab(cfg, run_id, meta, inc, det, camp):
@@ -78,13 +94,14 @@ def queue_tab(cfg, run_id, meta, inc, det, camp):
         v = v[v[rank] <= int(B)]
     v = v.sort_values(["hour", rank])
     if unit == "source incident":
-        show = ["alert_id", rank, "hour", "severity", "severity_source", "n_flows", "entity", "n_targets", "predicted_family",
-                "fine_label", "fine_label_status", "campaign_id", "campaign_size", "max_score", "opened_utc", "duration_min",
-                "segment", "notified"]
-        st.caption("`notified` = runtime notification under the FIFO budget of the policy; the queue rank is the hourly "
-                   "review order chosen in the sidebar. They can differ.")
+        show = ["alert_id", rank, "review_utc", "severity_at_review", "n_at_review", "severity", "n_flows", "severity_source",
+                "entity", "n_targets", "predicted_family", "fine_label", "fine_label_status", "campaign_id", "campaign_size",
+                "max_score", "opened_utc", "duration_min", "segment", "notified", "verdict"]
+        st.caption("Rank uses only flows decided up to `review_utc` (`n_at_review`, `severity_at_review`); `n_flows` and "
+                   "`severity` are lifetime totals. `notified` = runtime notification under the FIFO budget; it can differ "
+                   "from the review rank. `verdict` = latest feedback entry.")
     else:
-        show = ["update_id", "campaign_id", rank, "hour", "severity", "n_flows", "n_sources", "n_source_incidents",
+        show = ["update_id", "campaign_id", rank, "review_utc", "severity_at_review", "n_at_review", "severity", "n_flows", "n_sources", "n_source_incidents",
                 "campaign_sources_total", "campaign_opened_utc", "n_targets", "top_target", "family", "fine_label", "sources",
                 "max_score", "opened_utc", "duration_min", "segment"]
         st.caption("One row = a campaign update: the source incidents that joined one campaign in this hour. "
@@ -105,12 +122,18 @@ def queue_tab(cfg, run_id, meta, inc, det, camp):
     if row.fine_label_status == "uncertain":
         st.info(f"Fine class withheld (top web class below tau = {cfg.get('family', {}).get('tau', 0.8)} of the Web family "
                 f"mass). Severity uses the family, not the withheld class. Alert decision is unaffected.")
-    fl = flows_of(cfg, det, col, item)
+    at_review = st.toggle("Evidence at review time only", value=True,
+                          help=f"Only flows decided up to {row.review_utc} UTC, i.e. what the queue ranked on.")
+    fl, sm = flows_of(cfg, det, col, item, upto=int(row.review_at) if at_review else None)
     a, b = st.columns([2, 1])
+    scope = "up to review time; " if at_review else ""
+    a.caption(f"Showing the first {sm['n_shown']:,} of {sm['n_selected']:,} flows in decision order "
+              f"({scope}{sm['n_lifetime']:,} over the lifetime of the item). Label counts, sources and targets on the "
+              "right use all selected flows, not only the rows shown.")
     a.dataframe(fl, width="stretch", hide_index=True, height=300)
     b.write("**Family-aware labels**")
-    b.bar_chart(fl.fine_label.value_counts())
-    b.write(f"**Sources:** {fl.entity.nunique()} · **targets:** {fl.dst.nunique()} · **dst ports:** {fl[F.DPORT].nunique()}")
+    b.bar_chart(sm["labels"])
+    b.write(f"**Sources:** {sm['sources']} · **targets:** {sm['targets']} · **dst ports (shown rows):** {sm['dst_ports']}")
     b.caption("Evidence = flow facts and policy reasons; scores are decision scores, not calibrated probabilities.")
     alert_ids = (inc.loc[inc.incident_id.isin(det.loc[det.update_id == item, "incident_id"].unique()), "alert_id"]
                  .astype(int).tolist() if unit == "campaign" else [int(row.alert_id)])
@@ -161,6 +184,12 @@ def main():
         st.error("start with: python -m netirava ui --run <run_id>")
         return
     cfg, meta, inc, det, camp = load(cfg_path, run_id)
+    ok, cfg_sha, run_sha = provenance_check(cfg, meta)
+    if not ok:
+        st.error(f"Provenance mismatch: run {run_id} was replayed on stream {str(run_sha)[:12]}, but the opened config "
+                 f"({cfg_path}) points to stream {str(cfg_sha)[:12]}. Open the run with the config it was replayed with "
+                 "(e.g. configs/ops_holdout.yaml for H5-H9 runs).")
+        return
     st.caption(f"run {run_id} · A0 {meta['a0']['model_hash']} ({meta['a0'].get('model_dir') or 'a0'}) · threshold "
                f"{meta['a0']['threshold']:.4g} · policy {meta['policy']['version']} (source IP, cooldown "
                f"{meta['policy']['cooldown_ms']//60000} min, budget {meta['policy']['budget_per_hour']}/h) · "

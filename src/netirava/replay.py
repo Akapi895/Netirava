@@ -88,9 +88,11 @@ def git_commit():
 
 
 def run(cfg, mode="a0", pace="fast", speed=None, segments=None, max_events=None, run_id=None, models_dir=None,
-        unlock_holdout=False, model="a0"):
-    """model: sub-directory of the models dir holding an A0 (a0.cbm + a0_meta.json), e.g. 'a0' (default,
-    A0 v2) or 'pilot_cns/s0' (corrected-label pilot). The anomaly model is always models/anomaly."""
+        unlock_holdout=False, model=None):
+    """model: sub-directory of the models dir holding an A0 (a0.cbm + a0_meta.json), e.g. 'a0' (A0 v2) or
+    'pilot_cns/s0' (corrected-label pilot). Default: cfg final_system.model_dir, else 'a0' (same rule as
+    the CLI). The anomaly model is always models/anomaly."""
+    model = model or cfg.get("final_system", {}).get("model_dir", "a0")
     mdir = models_dir or K.path(cfg, "models")
     a0 = A0.load(mdir / model)
     an = Anomaly.load(mdir / "anomaly") if mode == "a0-shadow" else None

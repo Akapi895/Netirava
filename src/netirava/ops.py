@@ -104,7 +104,8 @@ def unit_metrics(al, unit, ctx, budgets, policies):
     n_items = len(items)
     has_att = al.groupby(unit).att.any() if n_items else pd.Series(dtype=bool)
     false_item = (~has_att) & al.groupby(unit).ben.any() if n_items else pd.Series(dtype=bool)
-    r = {"items": n_items, "items_per_hour": n_items / ctx["hours"],
+    r = {"items": n_items, "false_items": int(false_item.sum()) if n_items else 0,
+         "items_per_hour": n_items / ctx["hours"],
          "false_items_per_hour": float(false_item.sum() / ctx["hours"]) if n_items else 0.0,
          "flows_per_item": len(al) / n_items if n_items else None,
          "fragmentation_items_per_attack_type": (al[al.att].groupby("atype")[unit].nunique().to_dict() if n_items else {}),
@@ -168,7 +169,13 @@ def scenario_context(g, lab, cfg):
     d["ep"] = epv
     a = d[d.is_attack]
     ep_lab = a.groupby("ep")[F.LABEL].first()
-    ctx = {"hours": max(1, int((g.decision_at // HOUR).nunique())), "n_ep": int(a.ep.nunique()), "n_att": int(len(a)),
+    # exposure = configured observation time of the scenario's windows (FLOW_START in [start, end)); the
+    # earlier denominator (number of clock-hour buckets with events) over-counted short windows that cross
+    # an hour boundary (measurement correction 2026-11-09, docs/10_evidence_ledger.md)
+    wb = {w["id"]: w for w in window_bounds(cfg)}
+    exposure_h = sum((wb[s]["end_ms"] - wb[s]["start_ms"]) / HOUR for s in g.segment.unique())
+    ctx = {"hours": exposure_h, "hour_buckets": int((g.decision_at // HOUR).nunique()),
+           "n_ep": int(a.ep.nunique()), "n_att": int(len(a)),
            "ep_w": ep_lab.map(lambda l: w_imp.get(tax.get(l, l), 3)).astype(float),
            "types": sorted((a.segment + "|" + a[F.LABEL]).unique().tolist())}
     ctx["type_first"] = a.assign(t=a.segment + "|" + a[F.LABEL]).groupby("t").decision_at.min().to_dict()
@@ -209,7 +216,8 @@ def correlation_run(cfg, run_id, label_sets=("original", "corrected")):
                               "attack_recall_by_label": {k: float(v) for k, v in
                                                          (al[al.att].groupby("lab").size() /
                                                           truth[truth.is_attack].groupby(F.LABEL).size()).fillna(0).items()}},
-                     "hours": ctx["hours"], "episodes": ctx["n_ep"], "attack_types": ctx["types"], "units": {}}
+                     "hours": ctx["hours"], "exposure_definition": "sum of window lengths (FLOW_START in [start, end))",
+                     "hour_buckets": ctx["hour_buckets"], "episodes": ctx["n_ep"], "attack_types": ctx["types"], "units": {}}
                 for u in UNITS:
                     r["units"][u] = unit_metrics(al, u, ctx, budgets, policies)
                 r["correlation_quality"] = correlation_quality(al) if len(al) else None
@@ -367,11 +375,12 @@ def model_rule(res_a0, res_pilot, cfg, hoic="holdout-ddos-hoic", hoic_label="DDO
             r = x.get("corrected") or x["original"]
             nb += r["flow"]["n_benign"]
             fp += r["flow"]["fp"]
-            fi += r["units"]["source"]["false_items_per_hour"] * r["hours"]
+            fi += r["units"]["source"]["false_items"]
             h += r["hours"]
         x = res["levels"][a_].get(hoic, {})
         rr = (x.get("corrected") or x.get("original") or {}).get("flow", {}).get("attack_recall_by_label", {}).get(hoic_label, 0.0)
-        return {"benign_fpr": fp / nb if nb else None, "benign_fpr_wilson95": wilson(fp, nb), "n_benign": nb,
+        return {"benign_fpr": fp / nb if nb else None, "benign_fpr_wilson95": wilson(fp, nb), "n_benign": nb, "fp": fp,
+                "false_source_incidents": fi, "exposure_hours": h,
                 "false_source_incidents_per_hour": fi / h if h else None, "hoic_recall": rr}
     a, p = pooled(res_a0), pooled(res_pilot)
     ok = (p["benign_fpr"] <= a["benign_fpr"] and

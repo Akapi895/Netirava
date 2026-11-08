@@ -88,6 +88,14 @@ def incident_table(cfg, run_id):
     items = _queue_ranks(det, "incident_id")
     for p in ("fifo", "volume", "severity"):
         inc[f"queue_rank_{p}"] = inc.incident_id.map(items[f"rank_{p}"]).astype("Int64")
+    # evidence the queue saw at review time (end of the opening hour), next to the lifetime totals
+    inc["review_at"] = inc.incident_id.map(items.review_at)
+    inc["review_utc"] = pd.to_datetime(inc.review_at, unit="ms", utc=True).dt.strftime("%m-%d %H:%M")
+    inc["n_at_review"] = inc.incident_id.map(items.n_at_review).astype("Int64")
+    inc["severity_at_review"] = inc.incident_id.map(items.sev_at_review).astype("Int64")
+    lv = RunStore(cfg, run_id).latest_verdicts()
+    inc = inc.merge(lv, on="alert_id", how="left")
+    inc["reviewed"] = inc.verdict.notna()
     inc["priority"] = inc.n_flows
     if "campaign_id" in inc:
         sizes = det.groupby("campaign_id").incident_id.nunique()
@@ -116,6 +124,10 @@ def campaign_table(cfg, run_id, det=None):
     items = _queue_ranks(d, "update_id")
     for p in ("fifo", "volume", "severity"):
         tab[f"queue_rank_{p}"] = items[f"rank_{p}"]
+    tab["review_at"] = items.review_at
+    tab["review_utc"] = pd.to_datetime(tab.review_at, unit="ms", utc=True).dt.strftime("%m-%d %H:%M")
+    tab["n_at_review"] = items.n_at_review
+    tab["severity_at_review"] = items.sev_at_review
     tab["severity"] = g.severity.max()
     tab["opened_utc"] = pd.to_datetime(tab["first"], unit="ms", utc=True).dt.strftime("%m-%d %H:%M:%S")
     tab["hour"] = pd.to_datetime(tab["first"], unit="ms", utc=True).dt.strftime("%m-%d %H:00")

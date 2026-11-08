@@ -1,0 +1,46 @@
+"""Regression tests for the 2026-11-09 metric / provenance / UI fixes (docs/10_evidence_ledger.md §6)."""
+
+import pandas as pd
+import pytest
+
+from netirava import family as FA
+
+
+def test_incident_label_is_a_joint_mode_of_family_and_fine_label():
+    # independent modes would give family Web (4 flows) with fine label GoldenEye (3 flows): never observed together
+    d = pd.DataFrame({"incident_id": [1] * 7,
+                      "predicted_family": ["Web", "Web", "Web", "Web", "DoS", "DoS", "DoS"],
+                      "fine_label": ["Brute_Force_-XSS", "Brute_Force_-XSS", "SQL_Injection", "SQL_Injection",
+                                     "DoS_attacks-GoldenEye", "DoS_attacks-GoldenEye", "DoS_attacks-GoldenEye"],
+                      "fine_label_status": ["fine"] * 7})
+    r = FA.incident_labels(d).loc[1]
+    assert (r.predicted_family, r.fine_label) == ("DoS", "DoS_attacks-GoldenEye")
+
+
+def test_feedback_correction_must_target_the_same_alert(synth):
+    from netirava.replay import run
+    from netirava.storage import RunStore
+    run(synth, mode="a0", run_id="fix_fb")
+    st = RunStore(synth, "fix_fb")
+    ids = [r[0] for r in st.list_incidents(5)]
+    assert len(ids) >= 2
+    f1 = st.add_feedback(ids[0], "false_positive", "test", "t")["feedback_id"]
+    with pytest.raises(ValueError, match="belongs to alert"):
+        st.add_feedback(ids[1], "true_positive", "test", "t", corrects=f1)
+    st.add_feedback(ids[0], "true_positive", "test", "t", corrects=f1)
+    lv = st.latest_verdicts().set_index("alert_id")
+    assert lv.loc[ids[0], "verdict"] == "true_positive"
+
+
+def test_replay_api_default_model_follows_final_system(synth, monkeypatch):
+    import copy
+    import netirava.replay as R
+    seen = []
+    real = R.A0.load
+    monkeypatch.setattr(R.A0, "load", staticmethod(lambda p: seen.append(str(p)) or real(p)))
+    R.run(synth, mode="a0", run_id="fix_default", max_events=200)
+    assert seen[-1].replace("\\", "/").endswith("/a0")
+    cfg = copy.deepcopy(synth)
+    cfg["final_system"] = {"model_dir": "a0"}
+    R.run(cfg, mode="a0", run_id="fix_default2", max_events=200)
+    assert seen[-1].replace("\\", "/").endswith("/a0")

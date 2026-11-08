@@ -56,6 +56,7 @@ labels:
     DoS_attacks-Hulk: DoS
     DDOS_attack-HOIC: DDoS                  # ops holdout H5 (reporting only)
     DDOS_attack-LOIC-UDP: DDoS
+    Portscan: Portscan                      # CNS2022-adapted label (truth_cns2022 only); never a model class
 
 a0:
   known_classes: [Benign, FTP-BruteForce, SSH-Bruteforce, DoS_attacks-GoldenEye, DoS_attacks-Slowloris,
@@ -123,7 +124,7 @@ ops:                                        # ops study (2026-11-08), pre-regist
     policies: [fifo, volume, severity]      # one shared queue function for every unit
     alphas: [0.001, 0.005, 0.01]
     primary: {policy: severity, budget: 10, alpha: 0.001}
-  impact_weight: {Web: 4, BruteForce: 3, DoS: 3, DDoS: 4, Bot: 5, Infiltration: 5}   # evaluator only (risk-weighted coverage)
+  impact_weight: {Web: 4, BruteForce: 3, DoS: 3, DDoS: 4, Bot: 5, Infiltration: 5, Portscan: 3}   # evaluator only; Portscan made explicit 2026-11-09 at the default it already used (3)
   go_rules: {benefit_abs: 0.05, contamination_max: 0.05, delay_max_ms: 900000}
   drift:                                    # label-free monitor, reference = C1 scored by the same model
     reference_window: C1_0220_benign
