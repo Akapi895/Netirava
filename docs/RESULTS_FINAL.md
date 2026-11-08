@@ -113,3 +113,28 @@ $py = ".venv\Scripts\python.exe"
 & $py -m netirava decide --run <run_id>
 & $py -m netirava ui --run <run_id>
 ```
+
+## 7. v3: đối chiếu tám vấn đề đã nêu, với kiểm soát FP là ràng buộc xuyên suốt
+**Đã khai báo trước khi chạy** (commit `5e98876`): holdout thứ hai **H2 DoS-Hulk** (16/02 17:35–18:05, chưa từng chạm tới), bảng severity cho triage, và hệ thống cuối (A0 v2, V1, α = 0.1%, cùng luật severity). H2 được chạy **một lần** (run `20261108T132246_a0-shadow_fast`).
+
+**Các file kết quả:**
+- `runs/minority_report.json`: 3 seed, PR, họ Web, trần dữ liệu;
+- `runs/fp_profile.json`;
+- `runs/20261108T122848_a0-shadow_fast/DECISIONS_dev.json`;
+- `runs/20261108T132246_a0-shadow_fast/DECISIONS_holdout.json`.
+
+| # | Vấn đề | Bằng chứng mới | Kết luận |
+|---|---|---|---|
+| 1 | Lớp hiếm chưa đủ mạnh và không đồng đều | Rare macro-F1 của A0 qua 3 seed: 0.469 / 0.487 / 0.525 (trung bình **0.494**). F1 trung bình: Web 0.759, XSS 0.432, SQLi 0.290 (SQLi dao động mạnh theo seed) | Web ổn định; XSS và SQLi chưa vững. **Không** tuyên bố "vững trên mọi lớp hiếm" |
+| 2 | Không tách được SQLi và XSS | **Trần dữ liệu:** 82% flow XSS và 75% flow SQLi được đánh giá có fingerprint 49 feature trùng với flow train **mang nhãn khác** (XSS hoặc SQLi). Gộp theo họ Web (chỉ để báo cáo): **F1 0.851** (P 0.838, R 0.865) | Lỗi do **input không phân biệt được** hai lớp, không do mất cân bằng. Model và UI hiện "Web attack (XSS/SQLi ambiguous)" thay vì chọn bừa một lớp. Nhãn gốc giữ nguyên |
+| 3 | Đánh đổi precision/recall | AP: Web 0.726, XSS 0.382, SQLi 0.500. Precision của XSS ở recall 0.5 chỉ đạt 0.39; của SQLi là 0.49 | Không có ngưỡng nào cho XSS/SQLi precision tốt: giới hạn nằm ở input (mục 2), không phải ở chọn ngưỡng |
+| 4 | **FPR không ổn định khi chuyển ngày** (ưu tiên cao nhất) | Ở α = 0.1%: FP trên ngày Infiltration là 959 flow nhưng chỉ **44 incident**, và **84%** số flow đó đến từ **một cặp host** (172.31.69.24 → .15, bị đoán là Web BF). Trên ngày Bot, 699 flow FP tạo 28 incident (5.6/giờ), **75%** đến từ 3 IP từng tấn công web hôm 22/02, đánh vào máy chủ web 172.31.69.28. Đây có thể là vấn đề nhãn: CIC gắn nhãn theo cửa sổ thời gian; *chưa kiểm chứng, không sửa nhãn*. **Ngày mới H2 (16/02): FPR 0.050% ≤ mục tiêu 0.1%**, chỉ 4 incident FP mỗi giờ | FPR theo flow phóng đại tải thật: theo incident, FP tập trung ở vài nguồn. Vẫn là rủi ro thật: ngày 28/02 vượt mục tiêu khoảng 6 lần theo flow |
+| 5 | Lợi ích của SMOTE chưa chắc | Δ rare macro-F1 khi **bỏ** SMOTE: −0.048, −0.061, −0.143 (**cùng dấu ở cả 3 seed**, trung bình −0.084). SqrtBalanced so với SMOTE: −0.010, −0.028, +0.059 (không nhất quán) | SMOTE tốt hơn **không xử lý gì** một cách nhất quán. **Chưa** tốt hơn class weighting |
+| 6 | Tổng quát hóa cho tấn công mới | H2 Hulk: A0 recall **0.928** ở FPR 0.050%; V4b 0.997. DDoS (H1): A0 0 ở 0.1%; V4b bị bác bỏ. Bot: chỉ V4b ở 1% | Phát hiện tốt khi lớp mới gần với họ đã biết (Hulk thuộc DoS); kém với họ lạ (DDoS ở FPR thấp, Bot). H2 chỉ có **1 episode** (1 attacker), không có CI |
+| 7 | Ưu tiên chưa phản ánh mức nguy hiểm | Severity (khai báo trước) **≈ volume** trên dev: episode@30 là 0.311 so với 0.313 ở α = 0.5%; có lúc làm SSH rơi khỏi hàng. Nguyên nhân: web brute-force đến từ hàng trăm IP nguồn, nên có 386 episode nhỏ vượt xa budget 10–30/giờ. Trên H2, severity, volume và FIFO đều phủ 1/1 | Luật severity **không cải thiện**. Vấn đề nằm ở **đơn vị gom** (theo IP nguồn), không nằm ở luật xếp hạng. Bước tiếp theo, chưa chạy: gom theo chiến dịch (đích + họ tấn công) |
+| 8 | Bằng chứng độc lập còn yếu | Thêm H2 (khai báo trước, chạy một lần): FPR và phát hiện đều tốt, nhưng chỉ có 1 episode. Các số triage của H1 vẫn là exploratory | Vẫn là development evidence trong một testbed. Ghi rõ là giới hạn |
+
+**Ba bài toán cốt lõi, kèm trạng thái:**
+- **Detection:** lớp hiếm có web-family F1 0.85 và rare macro-F1 0.49; SMOTE tốt hơn không xử lý qua 3 seed; XSS/SQLi bị giới hạn bởi input.
+- **Robustness:** FPR đạt mục tiêu trên ngày mới H2 (0.050%) nhưng vượt trên ngày 28/02 (0.60%, tập trung ở một cặp host); tấn công mới chỉ được phát hiện khi gần họ đã biết.
+- **Incident triage:** nén flow thành incident 2–4 bậc độ lớn. Luật ưu tiên (volume hay severity) chưa giải được kiểu tấn công phân tán nhiều nguồn.

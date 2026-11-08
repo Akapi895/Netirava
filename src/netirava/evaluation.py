@@ -261,3 +261,109 @@ def ablate_imbalance(cfg, variants=("a0", "a1", "a2"), boot_reps=1000, seed=2027
     out = K.path(cfg, "runs") / "ablate_imbalance.json"
     out.write_text(json.dumps(rep, indent=2, default=_js), encoding="utf-8")
     return rep
+
+
+# --------------------------------------------------------------------------- v3 minority report (B, C) and FP profile (A)
+def minority_report(cfg, variants=("a0", "a1", "a2"), seeds=(0, 1, 2)):
+    """Rare-class view on known_replay (within-episode):
+    B  stability over seeds: rare macro-F1 per variant x seed; paired per-seed delta vs a0
+    C  per-class P/R/F1 + one-vs-rest AP + precision at recall 0.5/0.8 (deployed a0, seed 0);
+       web-family view (Web/XSS/SQLi merged, reporting only; raw labels unchanged);
+       data ceiling: share of rare eval flows whose 49-feature fingerprint occurs in TRAIN under another label."""
+    from sklearn.metrics import average_precision_score, precision_recall_curve
+    from netirava.dataset import training_frame
+    from netirava.detectors import A0
+    classes = list(cfg["a0"]["known_classes"])
+    rare = list(cfg["a0"]["rare_classes"])
+    ev = load_stream(cfg, roles=["known_replay"]).merge(load_truth(cfg)[["flow_id", F.LABEL]], on="flow_id", validate="one_to_one")
+    y = ev[F.LABEL].to_numpy()
+    X = F.matrix(ev)
+    rep = {"rare_support": {c: int((y == c).sum()) for c in rare}, "runs": {}}
+
+    def f1s(pred):
+        out = {}
+        for c in rare:
+            t, p = y == c, pred == c
+            tp = (t & p).sum()
+            P_, R_ = (tp / p.sum() if p.sum() else 0.0), tp / t.sum()
+            out[c] = {"precision": float(P_), "recall": float(R_), "f1": float(2 * P_ * R_ / (P_ + R_)) if P_ + R_ else 0.0}
+        return out
+    probs = {}
+    for v in variants:
+        for s in seeds:
+            d = K.path(cfg, "models") / (v if s == int(cfg["a0"]["seed"]) else f"{v}_s{s}")
+            m = A0.load(d)
+            P, att, pr = m.score(X)
+            pred = np.asarray(m.classes, dtype=object)[pr]
+            pc = f1s(pred)
+            rep["runs"][f"{v}_s{s}"] = {"per_class": pc, "macro_f1_rare": float(np.mean([pc[c]["f1"] for c in rare]))}
+            if s == 0:
+                probs[v] = (P, m.classes, pred)
+    summ = {}
+    for v in variants:
+        vals = [rep["runs"][f"{v}_s{s}"]["macro_f1_rare"] for s in seeds]
+        summ[v] = {"macro_f1_rare_mean": float(np.mean(vals)), "sd": float(np.std(vals, ddof=1)), "per_seed": vals,
+                   "per_class_f1_mean": {c: float(np.mean([rep["runs"][f"{v}_s{s}"]["per_class"][c]["f1"] for s in seeds])) for c in rare}}
+        if v != "a0":
+            dd = [rep["runs"][f"{v}_s{s}"]["macro_f1_rare"] - rep["runs"][f"a0_s{s}"]["macro_f1_rare"] for s in seeds]
+            summ[v]["paired_delta_vs_a0"] = {"per_seed": dd, "mean": float(np.mean(dd)), "all_same_sign": bool(all(x > 0 for x in dd) or all(x < 0 for x in dd))}
+    rep["stability"] = summ
+    # C: deployed a0 seed 0
+    P, cl, pred = probs["a0"]
+    pr_tab = {}
+    for c in rare:
+        t = y == c
+        sc = P[:, cl.index(c)]
+        prec, rec, _ = precision_recall_curve(t, sc)
+        pr_tab[c] = {"ap_ovr": float(average_precision_score(t, sc)),
+                     "precision_at_recall_0.5": float(prec[rec >= 0.5].max()), "precision_at_recall_0.8": float(prec[rec >= 0.8].max()),
+                     "confusion_row": pd.Series(pred[t]).value_counts().to_dict()}
+    rep["a0_rare_pr"] = pr_tab
+    fam_t, fam_p = np.isin(y, rare), np.isin(pred, rare)
+    tp = (fam_t & fam_p).sum()
+    rep["web_family_view"] = {"precision": float(tp / fam_p.sum()), "recall": float(tp / fam_t.sum()),
+                              "f1": float(2 * tp / (fam_p.sum() + fam_t.sum())), "note": "Web+XSS+SQLi merged for reporting only"}
+    tr = training_frame(cfg, ["train"])
+    tr["fp"] = F.fingerprint(tr)
+    ev["fp"] = F.fingerprint(ev)
+    lab_by_fp = tr.groupby("fp")[F.LABEL].agg(lambda s: set(s))
+    ceil = {}
+    for c in rare:
+        e = ev[ev[F.LABEL] == c]
+        seen = e.fp.map(lab_by_fp)
+        other = seen.map(lambda s: isinstance(s, set) and any(x != c for x in s))
+        only_other = seen.map(lambda s: isinstance(s, set) and c not in s)
+        ceil[c] = {"n": int(len(e)), "fp_in_train_share": float(seen.notna().mean()),
+                   "fp_in_train_with_other_label_share": float(other.mean()),
+                   "fp_in_train_only_other_label_share": float(only_other.mean())}
+    rep["data_ceiling"] = ceil
+    (K.path(cfg, "runs") / "minority_report.json").write_text(json.dumps(rep, indent=2, default=_js), encoding="utf-8")
+    return rep
+
+
+def fp_profile(cfg, run_id, alpha=0.001, top=3):
+    """Where the benign false positives of A0 (V1) come from, per scenario: flow FPR, share of the top source->destination
+    pairs, predicted classes, and how many incidents (source IP + cooldown) they form."""
+    from netirava.decision import incidents, HOUR
+    from netirava.detectors import threshold_at_fpr
+    st = RunStore(cfg, run_id)
+    det = st.detections(columns=["flow_id", "segment", "entity", "decision_at", "a0_score", "a0_pred"])
+    d = det.merge(load_truth(cfg)[["flow_id", F.LABEL]], on="flow_id").merge(load_stream(cfg)[["flow_id", F.DST]], on="flow_id")
+    cal = pd.read_parquet(K.path(cfg, "models") / "calibration_scores.parquet")
+    thr, _ = threshold_at_fpr(cal[cal.is_benign].a0_score, alpha)
+    scen = {w["id"]: w["scenario"] for w in window_bounds(cfg)}
+    d["scenario"] = d.segment.map(scen)
+    out = {"alpha": alpha, "threshold": thr, "scenarios": {}}
+    for sc, g in d.groupby("scenario"):
+        g = g.reset_index(drop=True)
+        ben = g[F.LABEL] == "Benign"
+        fp = g[ben & (g.a0_score >= thr)]
+        inc = incidents(g, (ben & (g.a0_score >= thr)).to_numpy(), int(cfg["policy"]["cooldown_ms"]))
+        n_inc = int(len(np.unique(inc[inc >= 0])))
+        pairs = (fp.entity + " -> " + fp[F.DST]).value_counts()
+        hours = max(1, (g.decision_at // HOUR).nunique())
+        out["scenarios"][sc] = {"benign": int(ben.sum()), "fp_flows": int(len(fp)), "flow_fpr": float(len(fp) / max(ben.sum(), 1)),
+                                "fp_incidents": n_inc, "fp_incidents_per_hour": n_inc / hours,
+                                "top_pairs_share": {k: float(v / max(len(fp), 1)) for k, v in pairs.head(top).items()},
+                                "fp_pred_class": fp.a0_pred.value_counts().head(4).to_dict()}
+    return out

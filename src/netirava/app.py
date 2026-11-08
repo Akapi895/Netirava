@@ -46,6 +46,10 @@ def load(cfg_path, run_id):
     inc["opened_utc"] = pd.to_datetime(inc["first"], unit="ms", utc=True).dt.strftime("%m-%d %H:%M:%S")
     inc["duration_min"] = ((inc["last"] - inc["first"]) / 60000).round(1)
     inc["hour"] = pd.to_datetime(inc["first"], unit="ms", utc=True).dt.strftime("%m-%d %H:00")
+    sev = cfg.get("triage", {}).get("severity", {})
+    inc["severity"] = inc.top_class.map(sev).fillna(4).astype(int)
+    amb = {"Brute_Force_-XSS", "SQL_Injection"}          # 75-82% of their flows share fingerprints with the other
+    inc["label_shown"] = inc.top_class.where(~inc.top_class.isin(amb), "Web attack (XSS/SQLi ambiguous)")
     inc["priority"] = inc.n_flows
     return cfg, meta, inc.sort_values(["priority", "max_score"], ascending=False), det
 
@@ -82,15 +86,17 @@ def main():
         cls = st.multiselect("Predicted class", sorted(inc.top_class.unique()), default=sorted(inc.top_class.unique()))
         rare_only = st.checkbox("Rare classes only")
         B = st.number_input("Review budget (incidents / hour)", 1, 500, 10)
+        policy = st.radio("Queue order", ["severity", "volume"], help="severity = class severity, then alerted flows (pre-declared)")
         per_hour = st.checkbox("Show only top-B per hour (review queue)", value=True)
     v = inc[inc.segment.isin(seg) & inc.top_class.isin(cls)]
     if rare_only:
         v = v[v.rare_class]
+    keys = ["severity", "priority"] if policy == "severity" else ["priority", "max_score"]
     if per_hour:
-        v = v.sort_values(["hour", "priority"], ascending=[True, False]).groupby("hour").head(int(B))
-        v = v.sort_values(["priority", "max_score"], ascending=False)
-    show = ["alert_id", "priority", "entity", "top_class", "rare_class", "max_score", "opened_utc", "duration_min",
-            "segment", "status"]
+        v = v.sort_values(["hour"] + keys, ascending=[True, False, False]).groupby("hour").head(int(B))
+    v = v.sort_values(keys, ascending=False)
+    show = ["alert_id", "severity", "priority", "entity", "label_shown", "rare_class", "max_score", "opened_utc",
+            "duration_min", "segment", "status"]
     st.subheader(f"Queue ({len(v):,} incidents)")
     st.dataframe(v[show], width="stretch", hide_index=True, height=360)
     if v.empty:

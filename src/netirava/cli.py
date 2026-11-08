@@ -14,11 +14,12 @@ def _print(obj):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="netirava")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance"):
+    for name in ("inspect", "prepare", "train-a0", "train-anomaly", "audit", "score-calibration", "ablate-imbalance", "minority-report"):
         p = sub.add_parser(name)
         p.add_argument("--config", default="configs/demo.yaml")
         if name == "train-a0":
             p.add_argument("--variant", default="a0", choices=["a0", "a1", "a2"])
+            p.add_argument("--seed", type=int, default=None)
     p = sub.add_parser("replay")
     p.add_argument("--config", default="configs/demo.yaml")
     p.add_argument("--mode", choices=["a0", "a0-shadow"], default="a0")
@@ -68,7 +69,7 @@ def main(argv=None):
         _print(audit(cfg))
     elif a.cmd == "train-a0":
         from netirava.detectors import train_a0
-        _print(train_a0(cfg, a.variant))
+        _print(train_a0(cfg, a.variant, a.seed))
     elif a.cmd == "train-anomaly":
         from netirava.detectors import train_anomaly
         _print(train_anomaly(cfg))
@@ -83,6 +84,10 @@ def main(argv=None):
                     "rare": {c: (round(m["precision"], 3), round(m["recall"], 3), round(m["f1"], 3), m["support"])
                              for c, m in x["per_class"].items() if c in cfg["a0"]["rare_classes"]},
                     "delta_rare_vs_a0": x.get("delta_macro_f1_rare_vs_a0")} for v, x in r["variants"].items()})
+    elif a.cmd == "minority-report":
+        from netirava.evaluation import minority_report
+        r = minority_report(cfg)
+        _print({k: r[k] for k in ("stability", "a0_rare_pr", "web_family_view", "data_ceiling")})
     elif a.cmd == "score-calibration":
         from netirava.decision import score_calibration
         _print({"rows": len(score_calibration(cfg))})

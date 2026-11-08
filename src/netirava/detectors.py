@@ -144,7 +144,7 @@ VARIANTS = {   # imbalance handling (v2 ablation); "a0" is the deployed, pre-dec
 }
 
 
-def train_a0(cfg, variant="a0"):
+def train_a0(cfg, variant="a0", seed=None):
     from catboost import CatBoostClassifier
     vcfg = VARIANTS[variant]
     from netirava.dataset import training_frame
@@ -157,6 +157,8 @@ def train_a0(cfg, variant="a0"):
     y = tr[F.LABEL].map({c: i for i, c in enumerate(classes)}).to_numpy(np.int64)
     X = F.matrix(tr)
     rec = reference_recipe(cfg)
+    if seed is not None:
+        rec["seed"] = int(seed)
     if vcfg["smote"]:
         Xf, yf, sm = apply_smote(X, y, rec, classes)
     else:
@@ -175,7 +177,7 @@ def train_a0(cfg, variant="a0"):
     t1 = time.perf_counter()
     m.fit(Xf, yf)
     fit_s = time.perf_counter() - t1
-    out = K.path(cfg, "models") / variant
+    out = K.path(cfg, "models") / (variant if rec["seed"] == int(cfg["a0"]["seed"]) else f"{variant}_s{rec['seed']}")
     out.mkdir(parents=True, exist_ok=True)
     m.save_model(str(out / "a0.cbm"))
     model_hash = K.sha1_file(out / "a0.cbm")[:12]
