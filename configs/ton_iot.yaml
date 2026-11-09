@@ -1,0 +1,126 @@
+# NF-ToN-IoT-v3 supplementary experiment (docs/protocols/ton_iot.md). Separate from the CIC system:
+# own derived data, model and runs. The CIC final model (pilot_cns/s0) is not touched.
+# Windows/roles/taxonomy below were fixed from the label/host/time audit only (artifacts/ton_iot_v1/audit/),
+# before any model was fitted on this dataset.
+dataset:
+  name: NF-ToN-IoT-v3
+  sha1: 24854ca3072ab7c2ade9ebfb202345a666a94cfe   # bagit manifest; verified in artifacts/ton_iot_v1/RAW_MANIFEST_before.json
+  subset_name: TON-Netirava-v1
+paths:
+  raw_csv: datasets/NF-ToN-IoT-v3/NF-ToN-IoT-v3.csv
+  derived: artifacts/ton_iot_v1
+  models: artifacts/ton_iot_v1/models
+  runs: runs/ton_iot
+
+# Every attack class runs in its own time block. Split = per-class block, train head / purge gap / test tail.
+# Where a class runs as successive attacker sub-campaigns (injection, password, xss), the cut is placed at the
+# sub-campaign boundary: test sources are absent from SAME-CLASS training, not necessarily all training.
+# Global novelty includes benign/other classes; see docs/ton_iot_evaluation.md. Scanning has two blocks
+# (block 1 train, block 2 test). dos, ddos, backdoor, ransomware, mitm: concurrent attackers -> within-campaign
+# temporal holdout only. Gaps between windows (purge) are excluded from every role. Calibration benign = a
+# separate window. Window = FLOW_START in [start, end).
+windows:
+  - {id: T01_scan,  role: train,       start_utc: "2019-04-23 14:00", end_utc: "2019-04-23 17:00", scenario: train}
+  - {id: C01_cal,   role: calibration, start_utc: "2019-04-23 17:00", end_utc: "2019-04-24 02:00", scenario: calibration}
+  - {id: X01_scan,  role: replay,      start_utc: "2019-04-24 03:00", end_utc: "2019-04-24 07:15", scenario: test-scanning-block2}
+  - {id: T02_dos,   role: train,       start_utc: "2019-04-24 18:00", end_utc: "2019-04-24 23:00", scenario: train}
+  - {id: X02_dos,   role: replay,      start_utc: "2019-04-24 23:30", end_utc: "2019-04-25 03:00", scenario: test-dos-within-campaign}
+  - {id: T03_inj,   role: train,       start_utc: "2019-04-25 05:00", end_utc: "2019-04-25 09:39", scenario: train}
+  - {id: X03_inj,   role: replay,      start_utc: "2019-04-25 09:45", end_utc: "2019-04-25 10:30", scenario: test-injection-new-attackers}
+  - {id: T04_ddos,  role: train,       start_utc: "2019-04-25 14:00", end_utc: "2019-04-26 00:00", scenario: train}
+  - {id: X04_ddos,  role: replay,      start_utc: "2019-04-26 00:30", end_utc: "2019-04-26 05:30", scenario: test-ddos-within-campaign}
+  - {id: T05_pw,    role: train,       start_utc: "2019-04-26 13:00", end_utc: "2019-04-27 03:00", scenario: train}
+  - {id: X05_pw,    role: replay,      start_utc: "2019-04-27 03:03", end_utc: "2019-04-27 04:00", scenario: test-password-new-attackers}
+  - {id: T06_xss,   role: train,       start_utc: "2019-04-27 04:00", end_utc: "2019-04-27 06:48", scenario: train}
+  - {id: X06_xss,   role: replay,      start_utc: "2019-04-27 06:50", end_utc: "2019-04-27 13:00", scenario: test-xss-new-attackers}
+  - {id: T07_ran,   role: train,       start_utc: "2019-04-28 03:00", end_utc: "2019-04-28 05:00", scenario: train}
+  - {id: X07_ran,   role: replay,      start_utc: "2019-04-28 05:05", end_utc: "2019-04-28 07:00", scenario: test-ransomware-within-campaign}
+  - {id: T08_bd,    role: train,       start_utc: "2019-04-28 07:00", end_utc: "2019-04-28 20:00", scenario: train}
+  - {id: X08_bd,    role: replay,      start_utc: "2019-04-28 20:30", end_utc: "2019-04-29 10:00", scenario: test-backdoor-within-campaign}
+  - {id: T09_mitm,  role: train,       start_utc: "2019-04-29 12:00", end_utc: "2019-04-29 13:30", scenario: train}
+  - {id: X09_mitm,  role: replay,      start_utc: "2019-04-29 13:35", end_utc: "2019-04-29 15:00", scenario: test-mitm-within-campaign}
+
+prepare:
+  dedup: exact                       # drop exact duplicates (timestamps, IPs, 49 features), first copy in file order; 0 label conflicts in the audit
+  train_cap_per_class: {Benign: 2000000, default: 300000}   # deterministic Bernoulli sampling of TRAIN rows only (after dedup)
+  sample_seed: 2026                  # p(keep) = min(1, cap / n_class_train); u = hash(row_id, seed) / 2^64
+labels:
+  benign: Benign
+  flagged_classes: []
+  taxonomy:                          # fine class -> family (reporting + family-aware output)
+    Benign: Benign
+    scanning: Scan
+    dos: DoS
+    ddos: DoS
+    injection: Web
+    xss: Web
+    password: Credential
+    Backdoor: Malware
+    ransomware: Malware
+    mitm: MITM
+a0:
+  known_classes: [Benign, scanning, dos, ddos, injection, xss, password, Backdoor, ransomware, mitm]
+  rare_classes: [ransomware, mitm]   # placeholder; the gate re-derives minority from train support (< 1% of attack train rows)
+  minority_rule: {share_of_attack_train_rows_lt: 0.01, test_unique_flows_min: 100, test_flows_limited: 30}
+  seed: 0
+  target_fpr: 0.001
+  fpr_levels: [0.0005, 0.001, 0.005, 0.01]
+  recipe:                            # resolved before the single fit (no CPU learning-rate probe)
+    loss_function: MultiClass
+    iterations: 1000
+    depth: 6
+    l2_leaf_reg: 3
+    border_count: 254
+    bootstrap_type: Bayesian
+    boosting_type: Plain
+    learning_rate: 0.11132699996232986   # deviation: fixed to the value A0 resolved on CIC (its CPU probe is a fit)
+    auto_class_weights: Balanced
+    task_type: GPU
+    random_seed: 0
+    early_stopping: none
+replay:
+  export_delay_ms: 0
+  decision_tick_ms: 1000
+  chunk_events: 50000
+  default_speed: 60
+  shadow_deadline_ms_per_event: 1.0
+policy:
+  version: ton-policy-v1
+  entity: IPV4_SRC_ADDR
+  cooldown_ms: 900000
+  budget_per_hour: 30
+evaluation:
+  episode_gap_ms: 1800000
+triage:                              # severity of the predicted fine class (domain judgement, fixed before the fit)
+  severity: {ransomware: 5, Backdoor: 5, injection: 4, xss: 4, password: 4, mitm: 4, ddos: 3, dos: 3, scanning: 2, Benign: 4}
+family:
+  ambiguous: {DoS: [dos, ddos], Web: [injection, xss], Malware: [Backdoor, ransomware]}
+  tau: 0.8
+  severity: {DoS: 3, Web: 4, Malware: 5}   # Scan, Credential, MITM have one fine class: no subtype abstention there
+ops:
+  correlation: {key: [dst, family], ablation_keys: [[dst]], cooldown_ms: 900000, unknown_family: Unknown}
+  queue:
+    budgets: [10, 30]
+    policies: [fifo, volume, severity]   # comparators fixed here: same alert universe and budget
+    alphas: [0.001, 0.005, 0.01]
+    primary: {policy: severity, budget: 10, alpha: 0.001}
+  impact_weight: {Scan: 2, DoS: 3, Web: 4, Credential: 4, Malware: 5, MITM: 4}
+  go_rules: {benefit_abs: 0.05, contamination_max: 0.05, delay_max_ms: 900000}
+  drift:
+    reference_window: C01_cal
+    window_ms: 900000
+    min_flows: 2000
+    min_benign_eval: 5000
+    alphas: [0.0005, 0.001, 0.005, 0.01]
+    primary_alpha: 0.001
+    tail_band_factor: 10
+    ratio_alarm: 2.0
+    p_alarm: 0.001
+    psi_alarm: 0.25
+    exceed_factor: 2.0
+    cat_top_k: 20
+    go_rules: {spearman_min: 0.5, recall_min: 0.8, false_alarm_max: 0.2, min_events: 5}
+  model_rule: {incident_ratio_max: 1.5, hoic_recall_margin: 0.05}
+  ui_default_unit: source incident
+final_system:
+  model_dir: a0                      # the ToN-IoT experiment model (artifacts/ton_iot_v1/models/a0); NOT the CIC system

@@ -1,7 +1,7 @@
 """Family-aware labelling: the single implementation used by replay, export,
 evaluation and the triage UI.
 
-Contract (see docs/FAMILY_AWARE_FINAL_REPORT.md):
+Contract (see docs/triage.md):
 - The probability vector is never modified, so p(Benign), every family mass
   and the binary alert (attack_score = 1 - p(Benign) vs the locked threshold)
   are unchanged. Family-aware never turns Benign into Attack or vice versa.
@@ -76,12 +76,31 @@ def incident_labels(df, incident_col="incident_id"):
     d = df[df[incident_col] > 0]
     if d.empty:
         return pd.DataFrame(columns=["predicted_family", "fine_label", "fine_label_status", "share_uncertain"])
-    g = d.groupby(incident_col)
-    top = g.fine_label.agg(lambda s: s.value_counts().index[0])
-    fam = g.predicted_family.agg(lambda s: s.value_counts().index[0])
-    unc = g.fine_label_status.agg(lambda s: float((s == "uncertain").mean()))
+    # joint mode of the (family, fine_label) pair, so the two fields always come from the same flows
+    # (independent modes could pair e.g. family Web with fine label DoS_attacks-GoldenEye); ties -> first seen
+    pair = d.groupby([incident_col, "predicted_family", "fine_label"], sort=False).size().rename("n").reset_index()
+    pair = pair.sort_values([incident_col, "n"], ascending=[True, False], kind="stable").drop_duplicates(incident_col)
+    pair = pair.set_index(incident_col)
+    top, fam = pair.fine_label, pair.predicted_family
+    unc = d.groupby(incident_col).fine_label_status.agg(lambda s: float((s == "uncertain").mean()))
     st = np.where(top.str.contains("fine class uncertain"), "uncertain", np.where(top == BENIGN, "benign", "fine"))
     return pd.DataFrame({"predicted_family": fam, "fine_label": top, "fine_label_status": st, "share_uncertain": unc})
+
+
+def flow_severity(df, cfg):
+    """Family-aware severity per flow (fixes L-4.4: the withheld fine class never leaks into priority):
+    fine label -> triage.severity[class]; uncertain -> family.severity[family]; Benign argmax -> triage.severity['Benign'].
+    Returns (severity int array, source array in {'fine_class', 'family', 'benign_argmax'})."""
+    sev_c = cfg.get("triage", {}).get("severity", {})
+    sev_f = cfg.get("family", {}).get("severity", {})
+    default = int(sev_c.get(BENIGN, 4))
+    st = df.fine_label_status.to_numpy(dtype=object)
+    fine = df.fine_label.map(sev_c).to_numpy(dtype=float)
+    fam = df.predicted_family.map(sev_f).to_numpy(dtype=float)
+    sev = np.where(st == "uncertain", fam, np.where(st == "benign", default, fine))
+    sev = np.where(np.isnan(sev), default, sev).astype(int)
+    src = np.where(st == "uncertain", "family", np.where(st == "benign", "benign_argmax", "fine_class")).astype(object)
+    return sev, src
 
 
 # kept for the earlier evaluation code path (pilot.py)

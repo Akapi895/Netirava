@@ -1,5 +1,5 @@
 # RQ-PCAP feasibility study: protocol locked BEFORE any data download or evaluation.
-# Any change after the pre-registration commit must be logged in PCAP_FEASIBILITY_RESULTS.md (deviations section).
+# Post-registration deviations are consolidated in README.md (deviations section).
 
 study: rq_pcap_v1
 dataset: IoT-23 (Stratosphere Lab, CTU)  # NOT NF-CSE-CIC-IDS2018-v3; results do not transfer to Netirava automatically

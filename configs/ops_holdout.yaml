@@ -1,0 +1,130 @@
+# Ops-study holdout config (2026-11-08): NEW untouched windows H5-H9, replayed ONCE after tag ops-v1-frozen.
+# Chosen from label support only (English protocol: docs/protocols/ops_study.md §2). Models/thresholds are locked on demo C1.
+# Windows, roles, known classes, thresholds targets and policy parameters were fixed from
+# `inspect` support counts BEFORE any model was trained (see docs/data_quality.md).
+dataset:
+  name: NF-CSE-CIC-IDS2018-v3
+  sha1: ddcad6d826b73a128a447a0189137efd6c8f70c9     # bagit manifest of the shipped CSV
+  subset_name: CIC18-Ops-Holdout-v1
+  max_rows: 1800000                                   # engineering cap for the ops holdout subset
+paths:
+  raw_csv: datasets/NF-CSE-CIC-IDS2018-v3/f78acbaa2afe1595_NFV3DATA-A11964_A11964/data/NF-CICIDS2018-v3.csv
+  derived: artifacts/ops_holdout_v1          # own derived set; flow_id = raw row_id, same as demo
+  models: artifacts/models
+  runs: runs
+
+# Every flow whose FLOW_START is in [start_utc, end_utc) is kept (whole observed network,
+# no row sampling, no class balancing). Gaps between windows are real capture gaps of the demo.
+windows:
+  - {id: H7_0216_benign,  role: holdout, start_utc: "2018-02-16 19:00", end_utc: "2018-02-16 20:00", scenario: holdout-benign-0216}
+  - {id: H8_0220_benign,  role: holdout, start_utc: "2018-02-20 19:00", end_utc: "2018-02-20 20:00", scenario: holdout-benign-0220}
+  - {id: H5_0221_hoic,    role: holdout, start_utc: "2018-02-21 18:05", end_utc: "2018-02-21 18:35", scenario: holdout-ddos-hoic}
+  - {id: H9_0228_late,    role: holdout, start_utc: "2018-02-28 19:00", end_utc: "2018-02-28 20:00", scenario: holdout-infil-late-0228}
+  - {id: H6_0301_infil,   role: holdout, start_utc: "2018-03-01 14:00", end_utc: "2018-03-01 15:00", scenario: holdout-infil-0301}
+
+labels:
+  flagged_classes: [Infilteration]          # label quality flag; reported separately, never used for claims
+  taxonomy:                                 # demo family (reporting only); raw labels are kept verbatim
+    Benign: Benign
+    FTP-BruteForce: BruteForce
+    SSH-Bruteforce: BruteForce
+    DoS_attacks-GoldenEye: DoS
+    DoS_attacks-Slowloris: DoS
+    Bot: Bot
+    Brute_Force_-Web: Web
+    Brute_Force_-XSS: Web
+    SQL_Injection: Web
+    Infilteration: Infiltration
+    DDoS_attacks-LOIC-HTTP: DDoS
+    DoS_attacks-Hulk: DoS
+    DDOS_attack-HOIC: DDoS                  # ops holdout H5 (reporting only)
+    DDOS_attack-LOIC-UDP: DDoS
+    Portscan: Portscan                      # CNS2022-adapted label (truth_cns2022 only); never a model class
+
+a0:
+  known_classes: [Benign, FTP-BruteForce, SSH-Bruteforce, DoS_attacks-GoldenEye, DoS_attacks-Slowloris,
+                  Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]   # v2: rare web classes added
+  rare_classes: [Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]
+  reference_config: ../experiments/nextphase/configs.yaml   # NP-v1 recipe (inherited if present)
+  seed: 0
+  target_fpr: 0.001                         # pipeline-test operating point, not a production standard
+anomaly:
+  n_estimators: 100
+  max_samples: 256
+  contamination: auto
+  random_state: 0
+  n_jobs: 4
+  max_train_rows: 200000                    # deterministic sample (seed 0) of TRAIN benign rows
+  transform: log1p_signed                   # fixed, not learned
+  target_fpr: 0.001
+replay:
+  export_delay_ms: 0                        # lower-bound assumption; NOT measured from the CSV
+  decision_tick_ms: 1000                    # events are decided at the first tick >= available_at
+  chunk_events: 50000                       # vectorised scoring chunk (detectors are stateless per flow)
+  default_speed: 60                         # paced mode: simulated seconds per wall second
+  shadow_deadline_ms_per_event: 1.0         # shadow results slower than this per event are flagged late
+policy:
+  version: a0-policy-v1
+  entity: IPV4_SRC_ADDR
+  cooldown_ms: 900000                       # 15 min event time: candidates of an entity within it join one incident
+  budget_per_hour: 30                       # demo assumption (notifications per simulated hour); excess is logged
+evaluation:
+  episode_gap_ms: 1800000                   # proxy episode: same label + src IP, split at gaps > 30 min
+decision:                                   # offline decision layer (src/netirava/decision.py), flow-level
+  fpr_levels: [0.0005, 0.001, 0.005, 0.01]  # total benign FPR targets, each calibrated on C1 benign
+  primary_alpha: 0.001                      # primary operating point for claims; others are secondary
+  incident_budgets_per_hour: [10, 30]       # v2: triage budget B in INCIDENTS per simulated hour (first B, causal), assumption
+  dev_scenarios: [unknown-bot, unknown-web] # (v1) scenarios used to choose V4 parameters; frozen since e5336a8
+  grid: {W_ms: [60000, 300000, 900000], rho: [0.01, 0.05]}   # pre-declared V4 grid
+  grid_v4b: {W_ms: [60000, 300000, 900000], m: [10, 50]}       # second (last) design iteration, declared 2026-11-08
+  v4: {W_ms: 60000, rho: 0.01, Wb_ms: 60000, m: 50}   # FROZEN 2026-11-08 from dev selection (V4a grid, then V4b grid); primary_alpha unchanged
+triage:                                     # v3, declared before the DoS-Hulk holdout (2026-11-08)
+  # severity of the incident's predicted class (domain judgement: impact of a successful attack), 1-5.
+  # Benign = alert raised without an attack class (score/anomaly only) -> treated as unknown suspicious.
+  severity: {SQL_Injection: 5, Brute_Force_-XSS: 4, Brute_Force_-Web: 4, Benign: 4,
+             FTP-BruteForce: 3, SSH-Bruteforce: 3, DoS_attacks-GoldenEye: 3, DoS_attacks-Slowloris: 3}
+  # review policies compared at the same budget B (incidents / simulated hour):
+  #   fifo (causal), volume (most alerted flows), severity (max severity, then alerted flows) <- proposed
+  proposed_policy: severity
+final_system:                               # v3 (DoS-Hulk holdout): A0 v2; updated 2026-11-08 by the pre-declared RQ-M rule (ops study)
+  detector: A0 v2 (artifacts/models/a0), V1 decision at primary_alpha 0.001; other variants/levels reported
+  triage: severity policy, B in incident_budgets_per_hour
+  model_dir: pilot_cns/s0                   # D1: RQ-M rule held on the untouched H5-H9 (FPR, false incidents/h, HOIC recall); A0 v2 kept as baseline
+  review_unit: source incident              # RQ-C NO-GO; campaign = experimental view
+  drift_monitor: indicator only (tab "Threshold reliability"), never changes decisions
+family:                                     # family-aware labelling (src/netirava/family.py); labels only, never probabilities
+  ambiguous: {Web: [Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]}
+  tau: 0.8                                  # fine web label only if its share of the Web family mass >= tau
+  severity: {Web: 4}                        # severity of an UNCERTAIN incident = its family's, never the withheld fine class (fixes L-4.4)
+ops:                                        # ops study; English protocol at docs/protocols/ops_study.md, original committed before code/scores
+  correlation:                              # campaign = source incidents linked by (target host, predicted family), causal, no merging
+    key: [dst, family]                      # primary (frozen)
+    ablation_keys: [[dst]]                  # reported, never selected
+    cooldown_ms: 900000                     # key expires 15 min after its last alerted flow (same as source incidents)
+    unknown_family: Unknown                 # family of alerted flows whose argmax is Benign
+  queue:
+    budgets: [10, 30]                       # review items per simulated hour
+    policies: [fifo, volume, severity]      # one shared queue function for every unit
+    alphas: [0.001, 0.005, 0.01]
+    primary: {policy: severity, budget: 10, alpha: 0.001}
+  impact_weight: {Web: 4, BruteForce: 3, DoS: 3, DDoS: 4, Bot: 5, Infiltration: 5, Portscan: 3}   # evaluator only; Portscan made explicit 2026-11-09 at the default it already used (3)
+  go_rules: {benefit_abs: 0.05, contamination_max: 0.05, delay_max_ms: 900000}
+  drift:                                    # label-free monitor, reference = C1 scored by the same model
+    reference_window: C1_0220_benign
+    window_ms: 900000
+    min_flows: 2000
+    min_benign_eval: 5000                   # evaluator: windows with fewer benign flows are not scored for FPR
+    alphas: [0.0005, 0.001, 0.005, 0.01]
+    primary_alpha: 0.001
+    tail_band_factor: 10                    # TR band = [q_ref(1 - 10 alpha), t_alpha)
+    ratio_alarm: 2.0                        # AR / TR alarm: ratio >= 2 and one-sided binomial p < p_alarm
+    p_alarm: 0.001
+    psi_alarm: 0.25                         # S_PSI / median F_PSI alarm (conventional "major shift")
+    exceed_factor: 2.0                      # ground truth E: realized benign FPR > 2 alpha
+    cat_top_k: 20
+    go_rules: {spearman_min: 0.5, recall_min: 0.8, false_alarm_max: 0.2, min_events: 5}
+  model_rule: {incident_ratio_max: 1.5, hoic_recall_margin: 0.05}   # RQ-M: recommend pilot_cns/s0 only if all hold
+  # Post-holdout decisions: docs/triage.md, docs/monitoring_and_transfer.md, runs/ops_study/holdout/GO.json.
+  ui_default_unit: source incident          # RQ-C NO-GO (G3 contamination 5.1-7.0% > 5%): campaigns stay an experimental view
+  ui_campaign_note: "Experimental view: NO-GO on the ops holdout (5-7% of benign source incidents were merged into attack campaigns, limit 5%)."
+  ui_monitor_note: "Label-free distribution-change indicator vs the calibration window (where the threshold was locked). Not an FPR estimate: on the holdout, the tail ratio tracked realized FPR only for the pilot model (Spearman 0.56) and the alarm recall is inconclusive (< 5 windows exceeded 2x the target FPR). It never changes an alert."

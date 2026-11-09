@@ -64,13 +64,26 @@ class RunStore:
         with self._conn() as c:
             if not c.execute("SELECT 1 FROM alerts WHERE alert_id=?", (alert_id,)).fetchone():
                 raise ValueError(f"alert {alert_id} not found in this run")
-            if corrects is not None and not c.execute("SELECT 1 FROM feedback WHERE feedback_id=?", (corrects,)).fetchone():
-                raise ValueError(f"feedback {corrects} to correct not found")
+            if corrects is not None:
+                row = c.execute("SELECT alert_id FROM feedback WHERE feedback_id=?", (corrects,)).fetchone()
+                if not row:
+                    raise ValueError(f"feedback {corrects} to correct not found")
+                if row[0] != alert_id:
+                    raise ValueError(f"feedback {corrects} belongs to alert {row[0]}, not {alert_id}")
             cur = c.execute("INSERT INTO feedback (alert_id,status,source,confirmed_by,confirmed_at,attack_label,corrects,provenance) "
                             "VALUES (?,?,?,?,?,?,?,?)",
                             (alert_id, status, source, confirmed_by, dt.datetime.now(dt.timezone.utc).isoformat(),
                              attack_label, corrects, provenance))
             return {"feedback_id": cur.lastrowid, "alert_id": alert_id, "status": status, "corrects": corrects}
+
+    def latest_verdicts(self):
+        """Latest verdict per alert (append-only log: the newest entry wins)."""
+        fb = self.feedback()
+        if fb.empty:
+            return pd.DataFrame(columns=["alert_id", "verdict", "verdict_by", "verdict_at"])
+        last = fb.sort_values("feedback_id").groupby("alert_id").tail(1)
+        return last.rename(columns={"status": "verdict", "confirmed_by": "verdict_by", "confirmed_at": "verdict_at"})[
+            ["alert_id", "verdict", "verdict_by", "verdict_at"]]
 
     def feedback(self):
         with self._conn() as c:

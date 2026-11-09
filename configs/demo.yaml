@@ -1,6 +1,6 @@
 # Netirava MVP demo config — CIC18-Causal-Demo-v1. Paths are relative to the repo root.
 # Windows, roles, known classes, thresholds targets and policy parameters were fixed from
-# `inspect` support counts BEFORE any model was trained (see docs/DATASET_CARD.md).
+# `inspect` support counts BEFORE any model was trained (see docs/data_quality.md).
 dataset:
   name: NF-CSE-CIC-IDS2018-v3
   sha1: ddcad6d826b73a128a447a0189137efd6c8f70c9     # bagit manifest of the shipped CSV
@@ -54,6 +54,9 @@ labels:
     Infilteration: Infiltration
     DDoS_attacks-LOIC-HTTP: DDoS
     DoS_attacks-Hulk: DoS
+    DDOS_attack-HOIC: DDoS                  # ops holdout H5 (reporting only)
+    DDOS_attack-LOIC-UDP: DDoS
+    Portscan: Portscan                      # CNS2022-adapted label (truth_cns2022 only); never a model class
 
 a0:
   known_classes: [Benign, FTP-BruteForce, SSH-Bruteforce, DoS_attacks-GoldenEye, DoS_attacks-Slowloris,
@@ -100,9 +103,45 @@ triage:                                     # v3, declared before the DoS-Hulk h
   # review policies compared at the same budget B (incidents / simulated hour):
   #   fifo (causal), volume (most alerted flows), severity (max severity, then alerted flows) <- proposed
   proposed_policy: severity
-final_system:                               # what the DoS-Hulk holdout evaluates (frozen with this commit)
+final_system:                               # v3 (DoS-Hulk holdout): A0 v2; updated 2026-11-08 by the pre-declared RQ-M rule (ops study)
   detector: A0 v2 (artifacts/models/a0), V1 decision at primary_alpha 0.001; other variants/levels reported
   triage: severity policy, B in incident_budgets_per_hour
+  model_dir: pilot_cns/s0                   # D1: RQ-M rule held on the untouched H5-H9 (FPR, false incidents/h, HOIC recall); A0 v2 kept as baseline
+  review_unit: source incident              # RQ-C NO-GO; campaign = experimental view
+  drift_monitor: indicator only (tab "Threshold reliability"), never changes decisions
 family:                                     # family-aware labelling (src/netirava/family.py); labels only, never probabilities
   ambiguous: {Web: [Brute_Force_-Web, Brute_Force_-XSS, SQL_Injection]}
   tau: 0.8                                  # fine web label only if its share of the Web family mass >= tau
+  severity: {Web: 4}                        # severity of an UNCERTAIN incident = its family's, never the withheld fine class (fixes L-4.4)
+ops:                                        # ops study; English protocol at docs/protocols/ops_study.md, original committed before code/scores
+  correlation:                              # campaign = source incidents linked by (target host, predicted family), causal, no merging
+    key: [dst, family]                      # primary (frozen)
+    ablation_keys: [[dst]]                  # reported, never selected
+    cooldown_ms: 900000                     # key expires 15 min after its last alerted flow (same as source incidents)
+    unknown_family: Unknown                 # family of alerted flows whose argmax is Benign
+  queue:
+    budgets: [10, 30]                       # review items per simulated hour
+    policies: [fifo, volume, severity]      # one shared queue function for every unit
+    alphas: [0.001, 0.005, 0.01]
+    primary: {policy: severity, budget: 10, alpha: 0.001}
+  impact_weight: {Web: 4, BruteForce: 3, DoS: 3, DDoS: 4, Bot: 5, Infiltration: 5, Portscan: 3}   # evaluator only; Portscan made explicit 2026-11-09 at the default it already used (3)
+  go_rules: {benefit_abs: 0.05, contamination_max: 0.05, delay_max_ms: 900000}
+  drift:                                    # label-free monitor, reference = C1 scored by the same model
+    reference_window: C1_0220_benign
+    window_ms: 900000
+    min_flows: 2000
+    min_benign_eval: 5000                   # evaluator: windows with fewer benign flows are not scored for FPR
+    alphas: [0.0005, 0.001, 0.005, 0.01]
+    primary_alpha: 0.001
+    tail_band_factor: 10                    # TR band = [q_ref(1 - 10 alpha), t_alpha)
+    ratio_alarm: 2.0                        # AR / TR alarm: ratio >= 2 and one-sided binomial p < p_alarm
+    p_alarm: 0.001
+    psi_alarm: 0.25                         # S_PSI / median F_PSI alarm (conventional "major shift")
+    exceed_factor: 2.0                      # ground truth E: realized benign FPR > 2 alpha
+    cat_top_k: 20
+    go_rules: {spearman_min: 0.5, recall_min: 0.8, false_alarm_max: 0.2, min_events: 5}
+  model_rule: {incident_ratio_max: 1.5, hoic_recall_margin: 0.05}   # RQ-M: recommend pilot_cns/s0 only if all hold
+  # Post-holdout decisions: docs/triage.md, docs/monitoring_and_transfer.md, runs/ops_study/holdout/GO.json.
+  ui_default_unit: source incident          # RQ-C NO-GO (G3 contamination 5.1-7.0% > 5%): campaigns stay an experimental view
+  ui_campaign_note: "Experimental view: NO-GO on the ops holdout (5-7% of benign source incidents were merged into attack campaigns, limit 5%)."
+  ui_monitor_note: "Label-free distribution-change indicator vs the calibration window (where the threshold was locked). Not an FPR estimate: on the holdout, the tail ratio tracked realized FPR only for the pilot model (Spearman 0.56) and the alarm recall is inconclusive (< 5 windows exceeded 2x the target FPR). It never changes an alert."

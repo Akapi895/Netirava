@@ -1,52 +1,86 @@
 # Netirava
 
-IDS chạy trên **flow đã hoàn tất** (NF-CSE-CIC-IDS2018-v3), dùng **dataset replay**:
-- **CatBoost A0** quyết định attack hay benign tại một threshold đã khóa;
-- **nhãn family-aware** (không phát lớp mịn khi Web/XSS/SQLi mơ hồ);
-- **gom incident** và **giao diện triage Streamlit**;
-- **IsolationForest** chạy ở chế độ shadow.
+**Completed-flow intrusion detection and incident triage** for [DN-CY-01: Network Intrusion Detection with Imbalanced Threat Data](https://datanovathon.com/problems/gamswulvrvtidne), DataNova 2026.
 
-Phản ứng chỉ là mô phỏng. Dự án nộp cho DataNovathon 2026, đề DN-CY-01.
+Netirava connects a CatBoost detector, a threshold selected on benign calibration traffic, family-aware label abstention, and a budgeted incident-review interface. Evaluation uses completed-flow replay. The prototype does not block live traffic, update itself, or establish effectiveness in a deployed SOC.
 
-| Tài liệu | Nội dung |
-|---|---|
-| [`docs/FINAL_SOLUTION_ARCHITECTURE.md`](docs/FINAL_SOLUTION_ARCHITECTURE.md) · [`CURRENT_LIMITATIONS.md`](docs/CURRENT_LIMITATIONS.md) · [`FINAL_COMPLETION_PLAN.md`](docs/FINAL_COMPLETION_PLAN.md) | **Giải pháp đã chốt** (3 thành phần), toàn bộ hạn chế, checklist hoàn thiện |
-| [`docs/EDA_REPORT.md`](docs/EDA_REPORT.md) · [`PREPROCESSING_SPEC.md`](docs/PREPROCESSING_SPEC.md) · [`FEATURE_EVALUATION.md`](docs/FEATURE_EVALUATION.md) · [`FE_HOLDOUT_RESULTS.md`](docs/FE_HOLDOUT_RESULTS.md) | EDA, preprocessing, đánh giá feature, holdout mới H3/H4 |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Pipeline, ranh giới module, contract dữ liệu, bất biến |
-| [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md) (+ [bản sinh tự động](docs/EXPERIMENT_REGISTRY.generated.md)) | Mọi thí nghiệm: loại bằng chứng (DEV / EXP / HO), artifact, lệnh, commit |
-| [`docs/RESULTS_FINAL.md`](docs/RESULTS_FINAL.md) + [`docs/RESULTS_FINAL_ADDENDUM.md`](docs/RESULTS_FINAL_ADDENDUM.md) | Kết quả trên nhãn gốc; addendum về lỗi nhãn NF-v3 |
-| [`docs/FAMILY_AWARE_FINAL_REPORT.md`](docs/FAMILY_AWARE_FINAL_REPORT.md) | Family-aware: implementation, test, metric, giới hạn |
-| [`docs/CORRECTED_LABEL_AUDIT.md`](docs/CORRECTED_LABEL_AUDIT.md) · [`CORRECTED_LABEL_PILOT_RESULTS.md`](docs/CORRECTED_LABEL_PILOT_RESULTS.md) · [`DATA_SUFFICIENCY_DECISION.md`](docs/DATA_SUFFICIENCY_DECISION.md) | Nhãn sửa theo CNS2022, pilot, quyết định về dữ liệu |
-| [`docs/FP_LABEL_FORENSICS.md`](docs/FP_LABEL_FORENSICS.md) · [`MINORITY_INFORMATION_AUDIT.md`](docs/MINORITY_INFORMATION_AUDIT.md) · [`SOTA_METHOD_REVIEW.md`](docs/SOTA_METHOD_REVIEW.md) | Forensics FP và nhãn, giới hạn thông tin, review paper |
-| [`docs/RESEARCH_FRAMING.md`](docs/RESEARCH_FRAMING.md) · [`DATASET_CARD.md`](docs/DATASET_CARD.md) · [`MODEL_CARD_A0_v2.md`](docs/MODEL_CARD_A0_v2.md) | Đề bài và RQ; subset; model card |
-| [`docs/RESULTS_MVP.md`](docs/RESULTS_MVP.md) · [`RESULTS_DECISION.md`](docs/RESULTS_DECISION.md) · [`docs/history/`](docs/history/) | Kết quả lịch sử (MVP; decision layer và holdout DDoS) và các tài liệu đã bị thay thế |
-| [`docs/CLEANUP_MANIFEST.md`](docs/CLEANUP_MANIFEST.md) | Thay đổi cấu trúc repo |
+## Read the submission
 
-## Cài đặt
-```powershell
-cd D:\Downloads\DataNova\Netirava
-uv sync                                   # Python 3.12; versions pinned in uv.lock
-.venv\Scripts\python.exe -m pytest -q     # 25 tests
+- **[Final report](docs/final_report.md):** problem, method, results, trade-offs, and conclusions.
+- **[CIC evidence ledger](docs/cic_evidence.md):** primary checkpoint, runs, cohorts, labels, and raw/deduplicated results.
+- **[ToN-IoT evaluation](docs/ton_iot_evaluation.md):** separately fitted model and before/after-gate metrics.
+- **[Limitations](docs/limitations.md)** · **[Architecture](docs/architecture.md)** · **[Reproduction](docs/reproduction.md)** · **[Documentation index](docs/README.md)**.
+
+### Three evaluations with different purposes
+
+| Evaluation | Purpose | Main findings and limits |
+|---|---|---|
+| **CIC-2018, primary system** `pilot_cns/s0` | Compare the label-audited pilot with A0 v2 on common cohorts | H5–H9, deduplicated: FPR **0.077% → 0.064%**, false source incidents **217 → 143**, HOIC recall **3.6% → 81.3%**; Infiltration recall **19.5% → 1.2%**. Minority evaluation is small and within-episode. |
+| **UNSW, frozen CIC models** | Check cross-environment transfer | Pilot FPR **24–27%** at the CIC-calibrated 0.1% target; per-attack AUROC <0.5. Direct checkpoint transfer failed. |
+| **ToN-IoT, separate checkpoint** `42b82c1d80ed` | Apply the pipeline after one new fit | 10,202,874 test flows. Pooled FPR **0.092%**, but **4/9 segments exceed 2α**; binary recall **33.29%**. Ransomware after the gate: precision **98.73%**, recall **86.38%**, F1 **92.14%**, within-campaign only. |
+
+After-gate fine-class metrics mean threshold plus argmax, **before family abstention**. ToN XSS has argmax F1 94.86% but correctly classified end-to-end recall only **2.81%**. ToN results do not belong to the CIC checkpoint and do not isolate the effect of class weighting.
+
+## Pipeline
+
+```text
+Raw CSV (read-only) → label-free derived stream → CatBoost → locked detection gate
+                                                        → family-aware labels
+                    → source incidents → hourly review queue → UI / feedback
+Truth (offline) ─────────────────────────→ flow / episode / incident evaluation
 ```
-- **Ngoài git:** `datasets/` (CSV gốc, chỉ đọc), `artifacts/` (subset dẫn xuất, model), `runs/` (các run).
-- **A0** kế thừa công thức NP-v1 từ `../experiments/nextphase/configs.yaml`.
 
-## Demo
+- **Detection:** 49 NetFlow v3 features; IPs, absolute timestamps, and labels are excluded from model inputs. CIC uses the label-audited SMOTENC pilot; ToN uses class weighting. Clean ablation does not establish a minority benefit from SMOTENC.
+- **Classification:** withhold a fine label when its probability share within the family is too low; probabilities and detection decisions stay unchanged.
+- **Triage:** source IP plus a 15-minute cooldown, FIFO/volume/severity queues, review-time evidence, and append-only feedback. Notification and review budgets are distinct.
+- **Monitoring:** label-free distribution indicators; neither a validated FPR estimate nor an adaptation mechanism.
+
+## Install and test
+
+Python 3.12 and [uv](https://docs.astral.sh/uv/) are required. Dependencies are pinned by `uv.lock`.
+
+```powershell
+uv sync --locked
+.venv\Scripts\python.exe -m pytest -q
+.venv\Scripts\python.exe -m netirava --help
+```
+
+Tests use small synthetic models. When local ToN artifacts exist, an additional contract/checksum check runs. These fixture fits do not retrain either research checkpoint.
+
+## Demo with existing artifacts
+
+Large datasets, checkpoints, and replay outputs are outside Git. A clone alone does **not** include the demo artifacts; see the [artifact requirements](docs/reproduction.md).
+
 ```powershell
 $py = ".venv\Scripts\python.exe"
-& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow                # A0 v2 (default model)
-& $py -m netirava ui --run <run_id>                                                 # http://localhost:8501
-& $py -m netirava export --run <run_id>                                             # runs/<run_id>/export/
-& $py -m netirava replay --config configs/demo.yaml --mode a0 --model pilot_cns/s0  # corrected-label pilot, separately
+# Primary CIC demo
+& $py -m netirava ui --config configs/demo.yaml --run 20261108T190143_a0_fast
+# Supplementary pipeline demo with a separately fitted ToN model
+& $py -m netirava ui --config configs/ton_iot.yaml --run ton_X09_mitm
+# Headless UI check without adding feedback
+& $py -m netirava ui-check --config configs/ton_iot.yaml --run ton_X09_mitm
+# Recompute reporting metrics from saved scores, without inference or fitting
+& $py -m netirava ton-report
 ```
 
-## Toàn bộ lệnh CLI
-`inspect` · `prepare` · `audit` · `relabel` · `train-a0 [--variant a0|a1|a2] [--seed N]` · `train-anomaly` · `score-calibration` · `replay [--mode a0|a0-shadow] [--pace fast|paced] [--model DIR] [--segments …] [--max-events N] [--unlock-holdout]` · `evaluate --run` · `decide --run [--select] [--unlock-holdout]` · `family-report --run [--segments …]` · `export --run` · `eda` · `fe-study` · `fe-final` · `ablate-imbalance` · `minority-report` · `pilot-train` · `pilot-eval` · `registry` · `incidents --run` · `feedback --run --alert-id --status [--provenance]` · `ui --run`
+The ToN fit marker blocks further training. CIC holdouts have already been consumed; reprocessing them does not create new independent test evidence.
 
-Mỗi lần `replay` tạo một run mới `runs/<run_id>/` gồm `run.json`, `detections.parquet` và `alerts.db`. Cách tái lập từng thí nghiệm có trong [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md).
+## Repository layout
 
-## Phạm vi claim
-- Chỉ là replay flow đã hoàn tất trong một testbed: **development evidence**.
-- Kết quả trên **holdout** (H1 DDoS, H2 DoS-Hulk) được đánh dấu riêng.
-- Nhãn NF-v3 có lỗi đã được xác định (xem forensics); mọi báo cáo đều ghi rõ dùng nhãn gốc hay nhãn đã sửa.
-- Không phải SOTA, không phải zero-day detection, không phải IPS.
+```text
+configs/        CIC, feature-study, ops-holdout, and ToN configurations
+src/netirava/   contracts, detectors, replay, policy, triage, evaluation, and CLI
+tests/          integration, causal-invariance, provenance, and reporting tests
+docs/           submission report, evidence, English protocols, reproduction
+research/       discontinued PCAP study; not a runtime dependency
+```
+
+Outside Git: `datasets/` (read-only), `artifacts/` (derived data/models/original-document archive), and `runs/` (scores, SQLite, logs). Dataset redistribution remains subject to the source terms.
+
+## Claim boundary
+
+The repository supports a replay prototype and the conditional findings above. **Robustness across all minority classes, new campaigns, or new networks remains unconfirmed.** Compression is not measured analyst time saved. The formative triage trial has one LLM reviewer; ToN does not saturate the review budget. No SOTA, zero-day, adaptation, or deployment-readiness claim is made.
+
+## Sources
+
+[UQ NetFlow datasets](https://staff.itee.uq.edu.au/marius/NIDS_datasets/) · [NetFlow v3, Luay et al.](https://arxiv.org/abs/2503.04404) · [CNS2022 CSE-CIC-IDS2018 label analysis](https://intrusion-detection.distrinet-research.be/CNS2022/).

@@ -2,8 +2,9 @@
 
 A0-CIC (active): the NP-v1 CatBoost anchor recipe re-fitted on CIC known
 classes (new model, own class map; not the UNSW checkpoint). Inherits base
-params, device and lr_rule cpu_auto_probe from experiments/nextphase/configs.yaml
-when present; SMOTE rule "classes with < 1000 training rows -> 1000" (SMOTENC).
+params, device and lr_rule cpu_auto_probe from a reference config. The portable
+configs/a0_reference.yaml snapshot replaces a missing external NP-v1 config;
+SMOTE rule "classes with < 1000 training rows -> 1000" (SMOTENC).
 Outputs: predicted known class, full probability vector, attack_score =
 1 - p(Benign) (a decision score, not a calibrated probability).
 
@@ -50,9 +51,13 @@ BENIGN = "Benign"
 
 
 def reference_recipe(cfg):
-    """Base params from the NP-v1 config if available, else the documented fallback."""
+    """Read an explicit reference, its portable snapshot, or the CPU test fallback."""
     ref = cfg["a0"].get("reference_config")
     p = Path(ref) if ref and Path(ref).is_absolute() else (K.ROOT / ref if ref else None)
+    if p and not p.exists():
+        snapshot = K.ROOT / "configs" / "a0_reference.yaml"
+        if snapshot.exists():
+            p = snapshot
     if p and p.exists():
         r = yaml.safe_load(p.read_text(encoding="utf-8"))
         rec = {"source": str(p), "sha1": K.sha1_file(p), "base": dict(r["base"]), "device": r.get("device", "CPU"),
@@ -225,7 +230,7 @@ def write_model_card(meta, path):
     t = meta["threshold"]
     lines = [
         f"# Model card — A0-CIC ({meta['model_hash']})", "",
-        "CatBoost MultiClass, công thức anchor NP-v1, **fit mới trên CIC-2018**; không dùng trọng số UNSW.", "",
+        "CatBoost MultiClass, NP-v1 anchor recipe, **new fit on CIC-2018**; no UNSW weights are reused.", "",
         f"- Known classes ({len(meta['classes'])}): " + ", ".join(meta["classes"]),
         f"- Train rows: {meta['n_train']:,} — " + ", ".join(f"{c} {n:,}" for c, n in meta["train_counts"].items()),
         f"- SMOTE: {meta['smote'].get('note', meta['smote'].get('method'))}",
