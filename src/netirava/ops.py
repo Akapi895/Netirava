@@ -1,4 +1,4 @@
-"""Ops study evaluator (docs/protocols/ops_study_prereg.md): incident correlation (RQ-C), drift monitoring
+"""Ops study evaluator (docs/protocols/ops_study.md): incident correlation (RQ-C), drift monitoring
 (RQ-D) and the model comparison on fresh holdouts (RQ-M). This is the only ops module that reads
 labels; the runtime parts (campaign.py, drift.py) are label-free.
 
@@ -171,7 +171,7 @@ def scenario_context(g, lab, cfg):
     ep_lab = a.groupby("ep")[F.LABEL].first()
     # exposure = configured observation time of the scenario's windows (FLOW_START in [start, end)); the
     # earlier denominator (number of clock-hour buckets with events) over-counted short windows that cross
-    # an hour boundary (measurement correction 2026-11-09, docs/10_evidence_ledger.md)
+    # an hour boundary (measurement correction 2026-11-09, docs/cic_evidence.md)
     wb = {w["id"]: w for w in window_bounds(cfg)}
     exposure_h = sum((wb[s]["end_ms"] - wb[s]["start_ms"]) / HOUR for s in g.segment.unique())
     ctx = {"hours": exposure_h, "hour_buckets": int((g.decision_at // HOUR).nunique()),

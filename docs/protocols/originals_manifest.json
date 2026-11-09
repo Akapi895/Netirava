@@ -1,0 +1,65 @@
+{
+  "purpose": "Byte-preserved pre-translation checkouts and historical Git originals; English files are later translations.",
+  "archive_in_git": false,
+  "protocols": [
+    {
+      "english_path": "docs/protocols/ops_study.md",
+      "original_checkout_path": "docs/protocols/ops_study_prereg.md",
+      "archive_path": "artifacts/documentation_originals/docs/protocols/ops_study_prereg.md",
+      "archive_sha1": "7455e570477b70462e4a40de0bb802a7d6b1cd7a",
+      "historical_commit": "e1b473a",
+      "historical_git_path": "docs/OPS_STUDY_PREREG.md",
+      "translation_is_frozen_original": false,
+      "committed_content_sha1": "7455e570477b70462e4a40de0bb802a7d6b1cd7a",
+      "checkout_matches_committed_bytes": true,
+      "checkout_matches_committed_text_normalized_lf": true
+    },
+    {
+      "english_path": "docs/protocols/clean_ablation.md",
+      "original_checkout_path": "docs/protocols/evidence_round2_prereg.md",
+      "archive_path": "artifacts/documentation_originals/docs/protocols/evidence_round2_prereg.md",
+      "archive_sha1": "91b6ae7ed4b9dafc919d02037b4c247f59a1472b",
+      "historical_commit": "d368fdc",
+      "historical_git_path": "docs/protocols/evidence_round2_prereg.md",
+      "translation_is_frozen_original": false,
+      "committed_content_sha1": "91b6ae7ed4b9dafc919d02037b4c247f59a1472b",
+      "checkout_matches_committed_bytes": true,
+      "checkout_matches_committed_text_normalized_lf": true
+    },
+    {
+      "english_path": "docs/protocols/external_evaluation.md",
+      "original_checkout_path": "docs/protocols/external_round3_prereg.md",
+      "archive_path": "artifacts/documentation_originals/docs/protocols/external_round3_prereg.md",
+      "archive_sha1": "2061398894686fc713241a704fc7ef2d76ac95c8",
+      "historical_commit": "6ad5206",
+      "historical_git_path": "docs/protocols/external_round3_prereg.md",
+      "translation_is_frozen_original": false,
+      "committed_content_sha1": "2061398894686fc713241a704fc7ef2d76ac95c8",
+      "checkout_matches_committed_bytes": true,
+      "checkout_matches_committed_text_normalized_lf": true
+    },
+    {
+      "english_path": "docs/protocols/ton_iot.md",
+      "original_checkout_path": "docs/protocols/ton_iot_protocol.md",
+      "archive_path": "artifacts/documentation_originals/docs/protocols/ton_iot_protocol.md",
+      "archive_sha1": "9c3693f838c07e157f1204f27a5b1817bb16d4ef",
+      "historical_commit": null,
+      "historical_git_path": null,
+      "translation_is_frozen_original": false,
+      "frozen_plan_expected_sha1": "9c3693f838c07e157f1204f27a5b1817bb16d4ef",
+      "archive_matches_frozen_plan": true
+    }
+  ],
+  "code_config_snapshots": {
+    "ton.py": {
+      "path": "artifacts/documentation_originals/ton.py",
+      "sha1": "3a0927406ab01982e34fde5f3088df58402c56ee",
+      "frozen_prefix_bytes": 26210,
+      "frozen_prefix_matches": true
+    },
+    "ton_iot.yaml": {
+      "path": "artifacts/documentation_originals/ton_iot.yaml",
+      "sha1": "50831de3826f50ffafb34858819c10783d23080c"
+    }
+  }
+}

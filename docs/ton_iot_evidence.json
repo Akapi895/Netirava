@@ -1,0 +1,1056 @@
+{
+  "dataset": "NF-ToN-IoT-v3",
+  "model_hash": "42b82c1d80ed",
+  "threshold": 0.9958433161963193,
+  "config_sha1": "ef9b312367c061ee98340c8a4f7c99458ebad910",
+  "training_config_sha1": "50831de3826f50ffafb34858819c10783d23080c",
+  "configuration_note": "Current config may have documentation-only edits; training hash is preserved separately.",
+  "stream_sha1": "7785c296affa7146300a8536884e0a19e4be3a59",
+  "truth_sha1": "37e7c4e8cb96a7a0a9c42ca416ec2951e2c0bf15",
+  "analysis": "post-fit reporting correction, saved decisions only; no model selection",
+  "fine_metric_scope": "threshold + argmax, before family abstention",
+  "pooled": {
+    "n": 10202874,
+    "attack_support": 5183232,
+    "benign_support": 5019642,
+    "alerted_flows": 1729858,
+    "true_positive_flows": 1725249,
+    "false_positive_flows": 4609,
+    "binary_recall": 0.3328519734405097,
+    "binary_precision": 0.9973356194554698,
+    "benign_fpr": 0.0009181929707337695,
+    "per_class_after_gate_before_family_abstention": {
+      "scanning": {
+        "support": 1096536,
+        "predicted_alerts": 0,
+        "true_positives": 0,
+        "precision": null,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "dos": {
+        "support": 82455,
+        "predicted_alerts": 123573,
+        "true_positives": 42004,
+        "precision": 0.3399124404198328,
+        "recall": 0.5094172578982475,
+        "f1": 0.40775040285786396
+      },
+      "ddos": {
+        "support": 1486698,
+        "predicted_alerts": 1355441,
+        "true_positives": 1351126,
+        "precision": 0.9968165342497386,
+        "recall": 0.9088099936907159,
+        "f1": 0.9507810842467592
+      },
+      "injection": {
+        "support": 62391,
+        "predicted_alerts": 61687,
+        "true_positives": 52810,
+        "precision": 0.8560960980433479,
+        "recall": 0.8464361847061275,
+        "f1": 0.8512387369235481
+      },
+      "xss": {
+        "support": 2271774,
+        "predicted_alerts": 64168,
+        "true_positives": 63828,
+        "precision": 0.9947014088018951,
+        "recall": 0.02809610463012606,
+        "f1": 0.054648617131760974
+      },
+      "password": {
+        "support": 116842,
+        "predicted_alerts": 64998,
+        "true_positives": 64576,
+        "precision": 0.9935074925382319,
+        "recall": 0.5526779753855634,
+        "f1": 0.710250769907611
+      },
+      "Backdoor": {
+        "support": 63655,
+        "predicted_alerts": 57466,
+        "true_positives": 57465,
+        "precision": 0.999982598406014,
+        "recall": 0.9027570497211531,
+        "f1": 0.9488858249188827
+      },
+      "ransomware": {
+        "support": 903,
+        "predicted_alerts": 790,
+        "true_positives": 780,
+        "precision": 0.9873417721518988,
+        "recall": 0.8637873754152824,
+        "f1": 0.9214412285883048
+      },
+      "mitm": {
+        "support": 1978,
+        "predicted_alerts": 1735,
+        "true_positives": 1312,
+        "precision": 0.7561959654178675,
+        "recall": 0.6632962588473206,
+        "f1": 0.706706167519526
+      }
+    }
+  },
+  "runs": {
+    "ton_X01_scan": {
+      "n": 4082262,
+      "attack_support": 1096536,
+      "benign_support": 2985726,
+      "alerted_flows": 740,
+      "true_positive_flows": 27,
+      "false_positive_flows": 713,
+      "binary_recall": 2.4622994593884742e-05,
+      "binary_precision": 0.03648648648648649,
+      "benign_fpr": 0.00023880289082119392,
+      "per_class_after_gate_before_family_abstention": {
+        "scanning": {
+          "support": 1096536,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "dos": {
+          "support": 0,
+          "predicted_alerts": 177,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "ddos": {
+          "support": 0,
+          "predicted_alerts": 60,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "injection": {
+          "support": 0,
+          "predicted_alerts": 430,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "xss": {
+          "support": 0,
+          "predicted_alerts": 21,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "password": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "Backdoor": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ransomware": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "mitm": {
+          "support": 0,
+          "predicted_alerts": 52,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        }
+      }
+    },
+    "ton_X02_dos": {
+      "n": 130273,
+      "attack_support": 82455,
+      "benign_support": 47818,
+      "alerted_flows": 42447,
+      "true_positive_flows": 42319,
+      "false_positive_flows": 128,
+      "binary_recall": 0.5132375234976654,
+      "binary_precision": 0.9969844747567554,
+      "benign_fpr": 0.0026768162616587895,
+      "per_class_after_gate_before_family_abstention": {
+        "scanning": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "dos": {
+          "support": 82455,
+          "predicted_alerts": 42129,
+          "true_positives": 42004,
+          "precision": 0.9970329226898336,
+          "recall": 0.5094172578982475,
+          "f1": 0.674308097347974
+        },
+        "ddos": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "injection": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "xss": {
+          "support": 0,
+          "predicted_alerts": 282,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "password": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "Backdoor": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ransomware": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "mitm": {
+          "support": 0,
+          "predicted_alerts": 36,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        }
+      }
+    },
+    "ton_X03_inj": {
+      "n": 73645,
+      "attack_support": 62391,
+      "benign_support": 11254,
+      "alerted_flows": 53957,
+      "true_positive_flows": 53854,
+      "false_positive_flows": 103,
+      "binary_recall": 0.863169367376705,
+      "binary_precision": 0.9980910725207109,
+      "benign_fpr": 0.009152301403945264,
+      "per_class_after_gate_before_family_abstention": {
+        "scanning": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "dos": {
+          "support": 0,
+          "predicted_alerts": 147,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "ddos": {
+          "support": 0,
+          "predicted_alerts": 789,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "injection": {
+          "support": 62391,
+          "predicted_alerts": 52860,
+          "true_positives": 52810,
+          "precision": 0.9990541051835036,
+          "recall": 0.8464361847061275,
+          "f1": 0.9164345645590928
+        },
+        "xss": {
+          "support": 0,
+          "predicted_alerts": 9,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "password": {
+          "support": 0,
+          "predicted_alerts": 131,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "Backdoor": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ransomware": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "mitm": {
+          "support": 0,
+          "predicted_alerts": 21,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        }
+      }
+    },
+    "ton_X04_ddos": {
+      "n": 3254910,
+      "attack_support": 1486698,
+      "benign_support": 1768212,
+      "alerted_flows": 1356209,
+      "true_positive_flows": 1352785,
+      "false_positive_flows": 3424,
+      "binary_recall": 0.9099258894543478,
+      "binary_precision": 0.9974753153828061,
+      "benign_fpr": 0.0019364193886253459,
+      "per_class_after_gate_before_family_abstention": {
+        "scanning": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "dos": {
+          "support": 0,
+          "predicted_alerts": 700,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "ddos": {
+          "support": 1486698,
+          "predicted_alerts": 1354115,
+          "true_positives": 1351126,
+          "precision": 0.997792654242808,
+          "recall": 0.9088099936907159,
+          "f1": 0.9512248782302812
+        },
+        "injection": {
+          "support": 0,
+          "predicted_alerts": 1358,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "xss": {
+          "support": 0,
+          "predicted_alerts": 26,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "password": {
+          "support": 0,
+          "predicted_alerts": 1,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "Backdoor": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ransomware": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "mitm": {
+          "support": 0,
+          "predicted_alerts": 9,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        }
+      }
+    },
+    "ton_X05_pw": {
+      "n": 120818,
+      "attack_support": 116842,
+      "benign_support": 3976,
+      "alerted_flows": 64631,
+      "true_positive_flows": 64607,
+      "false_positive_flows": 24,
+      "binary_recall": 0.5529432909399018,
+      "binary_precision": 0.999628661168789,
+      "benign_fpr": 0.006036217303822937,
+      "per_class_after_gate_before_family_abstention": {
+        "scanning": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "dos": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ddos": {
+          "support": 0,
+          "predicted_alerts": 3,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "injection": {
+          "support": 0,
+          "predicted_alerts": 28,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "xss": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "password": {
+          "support": 116842,
+          "predicted_alerts": 64599,
+          "true_positives": 64576,
+          "precision": 0.9996439573368009,
+          "recall": 0.5526779753855634,
+          "f1": 0.7118126553535309
+        },
+        "Backdoor": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ransomware": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "mitm": {
+          "support": 0,
+          "predicted_alerts": 1,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        }
+      }
+    },
+    "ton_X06_xss": {
+      "n": 2411648,
+      "attack_support": 2271774,
+      "benign_support": 139874,
+      "alerted_flows": 152141,
+      "true_positive_flows": 152099,
+      "false_positive_flows": 42,
+      "binary_recall": 0.06695164219680302,
+      "binary_precision": 0.9997239402922289,
+      "benign_fpr": 0.000300270243218897,
+      "per_class_after_gate_before_family_abstention": {
+        "scanning": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "dos": {
+          "support": 0,
+          "predicted_alerts": 80419,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "ddos": {
+          "support": 0,
+          "predicted_alerts": 474,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "injection": {
+          "support": 0,
+          "predicted_alerts": 7011,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "xss": {
+          "support": 2271774,
+          "predicted_alerts": 63830,
+          "true_positives": 63828,
+          "precision": 0.9999686667711107,
+          "recall": 0.02809610463012606,
+          "f1": 0.05465652567815434
+        },
+        "password": {
+          "support": 0,
+          "predicted_alerts": 267,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "Backdoor": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ransomware": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "mitm": {
+          "support": 0,
+          "predicted_alerts": 140,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        }
+      }
+    },
+    "ton_X07_ran": {
+      "n": 13390,
+      "attack_support": 903,
+      "benign_support": 12487,
+      "alerted_flows": 797,
+      "true_positive_flows": 781,
+      "false_positive_flows": 16,
+      "binary_recall": 0.8648947951273532,
+      "binary_precision": 0.9799247176913425,
+      "benign_fpr": 0.001281332585889325,
+      "per_class_after_gate_before_family_abstention": {
+        "scanning": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "dos": {
+          "support": 0,
+          "predicted_alerts": 1,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "ddos": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "injection": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "xss": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "password": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "Backdoor": {
+          "support": 0,
+          "predicted_alerts": 1,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        },
+        "ransomware": {
+          "support": 903,
+          "predicted_alerts": 790,
+          "true_positives": 780,
+          "precision": 0.9873417721518988,
+          "recall": 0.8637873754152824,
+          "f1": 0.9214412285883048
+        },
+        "mitm": {
+          "support": 0,
+          "predicted_alerts": 5,
+          "true_positives": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0
+        }
+      }
+    },
+    "ton_X08_bd": {
+      "n": 99288,
+      "attack_support": 63655,
+      "benign_support": 35633,
+      "alerted_flows": 57465,
+      "true_positive_flows": 57465,
+      "false_positive_flows": 0,
+      "binary_recall": 0.9027570497211531,
+      "binary_precision": 1.0,
+      "benign_fpr": 0.0,
+      "per_class_after_gate_before_family_abstention": {
+        "scanning": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "dos": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ddos": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "injection": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "xss": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "password": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "Backdoor": {
+          "support": 63655,
+          "predicted_alerts": 57465,
+          "true_positives": 57465,
+          "precision": 1.0,
+          "recall": 0.9027570497211531,
+          "f1": 0.9488936591809776
+        },
+        "ransomware": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "mitm": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        }
+      }
+    },
+    "ton_X09_mitm": {
+      "n": 16640,
+      "attack_support": 1978,
+      "benign_support": 14662,
+      "alerted_flows": 1471,
+      "true_positive_flows": 1312,
+      "false_positive_flows": 159,
+      "binary_recall": 0.6632962588473206,
+      "binary_precision": 0.8919102651257648,
+      "benign_fpr": 0.010844359568953759,
+      "per_class_after_gate_before_family_abstention": {
+        "scanning": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "dos": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ddos": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "injection": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "xss": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "password": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "Backdoor": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "ransomware": {
+          "support": 0,
+          "predicted_alerts": 0,
+          "true_positives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "mitm": {
+          "support": 1978,
+          "predicted_alerts": 1471,
+          "true_positives": 1312,
+          "precision": 0.8919102651257648,
+          "recall": 0.6632962588473206,
+          "f1": 0.7608002319512902
+        }
+      }
+    }
+  },
+  "source_host_novelty": {
+    "ton_X01_scan": {
+      "scanning": {
+        "test_attack_flows": 1096536,
+        "source_hosts": 16,
+        "not_seen_as_source_in_same_class": {
+          "flows": 5869,
+          "share": 0.0053523094545003536,
+          "source_hosts": 6
+        },
+        "not_seen_as_source_in_any_train_class": {
+          "flows": 57,
+          "share": 5.1981877475978904e-05,
+          "source_hosts": 3
+        },
+        "not_seen_as_either_endpoint_in_any_train_class": {
+          "flows": 57,
+          "share": 5.1981877475978904e-05,
+          "source_hosts": 3
+        }
+      }
+    },
+    "ton_X02_dos": {
+      "dos": {
+        "test_attack_flows": 82455,
+        "source_hosts": 4,
+        "not_seen_as_source_in_same_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        },
+        "not_seen_as_source_in_any_train_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        },
+        "not_seen_as_either_endpoint_in_any_train_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        }
+      }
+    },
+    "ton_X03_inj": {
+      "injection": {
+        "test_attack_flows": 62391,
+        "source_hosts": 2,
+        "not_seen_as_source_in_same_class": {
+          "flows": 62391,
+          "share": 1.0,
+          "source_hosts": 2
+        },
+        "not_seen_as_source_in_any_train_class": {
+          "flows": 26035,
+          "share": 0.4172877498357135,
+          "source_hosts": 1
+        },
+        "not_seen_as_either_endpoint_in_any_train_class": {
+          "flows": 26035,
+          "share": 0.4172877498357135,
+          "source_hosts": 1
+        }
+      }
+    },
+    "ton_X04_ddos": {
+      "ddos": {
+        "test_attack_flows": 1486698,
+        "source_hosts": 6,
+        "not_seen_as_source_in_same_class": {
+          "flows": 2317,
+          "share": 0.0015584873323297671,
+          "source_hosts": 2
+        },
+        "not_seen_as_source_in_any_train_class": {
+          "flows": 3,
+          "share": 2.0178946901119123e-06,
+          "source_hosts": 1
+        },
+        "not_seen_as_either_endpoint_in_any_train_class": {
+          "flows": 3,
+          "share": 2.0178946901119123e-06,
+          "source_hosts": 1
+        }
+      }
+    },
+    "ton_X05_pw": {
+      "password": {
+        "test_attack_flows": 116842,
+        "source_hosts": 2,
+        "not_seen_as_source_in_same_class": {
+          "flows": 116842,
+          "share": 1.0,
+          "source_hosts": 2
+        },
+        "not_seen_as_source_in_any_train_class": {
+          "flows": 86199,
+          "share": 0.7377398538196881,
+          "source_hosts": 1
+        },
+        "not_seen_as_either_endpoint_in_any_train_class": {
+          "flows": 86199,
+          "share": 0.7377398538196881,
+          "source_hosts": 1
+        }
+      }
+    },
+    "ton_X06_xss": {
+      "xss": {
+        "test_attack_flows": 2271774,
+        "source_hosts": 3,
+        "not_seen_as_source_in_same_class": {
+          "flows": 2271774,
+          "share": 1.0,
+          "source_hosts": 3
+        },
+        "not_seen_as_source_in_any_train_class": {
+          "flows": 1260104,
+          "share": 0.5546784143140999,
+          "source_hosts": 1
+        },
+        "not_seen_as_either_endpoint_in_any_train_class": {
+          "flows": 1260104,
+          "share": 0.5546784143140999,
+          "source_hosts": 1
+        }
+      }
+    },
+    "ton_X07_ran": {
+      "ransomware": {
+        "test_attack_flows": 903,
+        "source_hosts": 3,
+        "not_seen_as_source_in_same_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        },
+        "not_seen_as_source_in_any_train_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        },
+        "not_seen_as_either_endpoint_in_any_train_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        }
+      }
+    },
+    "ton_X08_bd": {
+      "Backdoor": {
+        "test_attack_flows": 63655,
+        "source_hosts": 4,
+        "not_seen_as_source_in_same_class": {
+          "flows": 6,
+          "share": 9.4258110124892e-05,
+          "source_hosts": 1
+        },
+        "not_seen_as_source_in_any_train_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        },
+        "not_seen_as_either_endpoint_in_any_train_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        }
+      }
+    },
+    "ton_X09_mitm": {
+      "mitm": {
+        "test_attack_flows": 1978,
+        "source_hosts": 2,
+        "not_seen_as_source_in_same_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        },
+        "not_seen_as_source_in_any_train_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        },
+        "not_seen_as_either_endpoint_in_any_train_class": {
+          "flows": 0,
+          "share": 0.0,
+          "source_hosts": 0
+        }
+      }
+    }
+  },
+  "test_coverage_exactly_once": true
+}

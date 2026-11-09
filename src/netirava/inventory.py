@@ -1,4 +1,4 @@
-"""Minority cohort inventory over the whole NF-CSE-CIC-IDS2018-v3 CSV (docs/protocols/evidence_round2_prereg.md §B).
+"""Minority cohort inventory over the whole NF-CSE-CIC-IDS2018-v3 CSV (docs/protocols/clean_ablation.md §B).
 
 Uses labels, IPs, ports, times and a hash of the full row only (no model score). An episode is
 (label, src IP, dst IP) split at gaps > 30 min. "Used" = intersects any window of demo.yaml,

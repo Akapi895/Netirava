@@ -1,4 +1,4 @@
-"""Clean imbalance ablation (docs/protocols/evidence_round2_prereg.md §A).
+"""Clean imbalance ablation (docs/protocols/clean_ablation.md §A).
 
 Same data (fe_study frame: exact duplicates removed, CNS2022-adapted labels, attempted/indeterminate
 excluded), same final train set (whole T1-T4 + pilot-train web rows), same 49 raw features, same A0

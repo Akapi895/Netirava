@@ -1,4 +1,4 @@
-"""Unified evidence ledger for the final system and its baseline (docs/10_evidence_ledger.md).
+"""Unified evidence ledger for the final system and its baseline (docs/cic_evidence.md).
 
 One tuple per model: model dir + hash, locked threshold (alpha 0.1% on C1 benign), stored replay runs.
 Every row = (model, cohort) with: label policy, support (benign / attack by label / excluded /

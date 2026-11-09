@@ -1,7 +1,7 @@
 [project]
 name = "netirava"
 version = "0.1.0"
-description = "Netirava MVP: completed-flow replay IDS with a supervised A0 detector and a shadow anomaly detector"
+description = "Completed-flow intrusion detection, family-aware classification and incident triage"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "numpy==2.5.4",

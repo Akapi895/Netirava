@@ -1,86 +1,92 @@
-# Kiến trúc
+# System architecture
 
-Netirava là IDS chạy trên flow NetFlow v3 đã hoàn tất, dùng dataset replay. Phản ứng (incident, notification) chỉ là mô phỏng: không block, không quarantine, không tự train lại.
+## 1. System interface
 
-## 1. Pipeline
+Input is a **completed flow**, not a packet stream. Features become available at FLOW_END+export delay; replay decides at the first tick no earlier than that time. Outputs are per-flow decisions, source incidents, review items, and append-only feedback. No live blocking, quarantine, or automatic retraining is performed.
+
 ```mermaid
 flowchart LR
-  CSV[(Raw CSV, read-only)] -->|prepare| S[(stream.parquet<br/>no labels)]
-  CSV -->|prepare| T[(truth.parquet<br/>original labels, evaluator only)]
-  T -->|relabel| TC[(truth_cns2022.parquet<br/>corrected labels + provenance)]
-  S --> R[replay<br/>available_at order, 1 s tick]
-  R --> A0[1 · CatBoost A0<br/>p vector, attack_score = 1 − p Benign]
-  A0 --> B{attack_score ≥ locked threshold}
-  A0 --> FA[2 · family-aware labels<br/>p untouched]
-  B --> P[policy: source IP + 15 min cooldown + budget<br/>source incidents]
-  P --> CO[campaign.py<br/>target host + family, causal]
-  FA --> D[(detections.parquet)]
-  P --> DB[(alerts.db<br/>incidents, alerts, append-only feedback)]
-  CO --> D
-  D --> TR[3 · triage.py<br/>flow / incident / campaign tables, export]
-  DB --> TR
-  TR --> UI[Streamlit triage UI]
-  D --> DM[drift.py<br/>label-free monitor vs C1]
-  DM --> UI
-  R -.->|shadow| AN[IsolationForest, diagnostics only]
-  D --> EV[evaluator: evaluation / decision / ops]
-  T --> EV
-  TC --> EV
+  RAW[Read-only raw CSV] --> PREP[Audit / prepare / split]
+  PREP --> STREAM[stream.parquet: no labels]
+  PREP --> TRUTH[truth.parquet: offline only]
+  STREAM --> FIT[Training / benign calibration]
+  TRUTH --> FIT
+  FIT --> MODEL[Frozen checkpoint + threshold]
+  STREAM --> REPLAY[Causal completed-flow replay]
+  MODEL --> REPLAY
+  REPLAY --> LABEL[Family-aware labels]
+  REPLAY --> POLICY[Detection gate / source incident policy]
+  LABEL --> DET[detections.parquet]
+  POLICY --> DET
+  POLICY --> DB[alerts.db / append-only feedback]
+  DET --> QUEUE[Hourly review queue / evidence]
+  DB --> QUEUE
+  QUEUE --> UI[Streamlit / export]
+  DET --> MON[Label-free monitor]
+  MON --> UI
+  DET --> EVAL[Offline evaluator]
+  TRUTH --> EVAL
 ```
 
-Ba thành phần của giải pháp:
-1. **Minority-aware detection:** CatBoost 8 known class, SMOTE quy tắc, kiểm soát chất lượng nhãn (nhãn sửa trong file riêng), threshold khóa trên C1.
-2. **Family-aware classification:** họ tấn công luôn có; nhãn mịn chỉ khi đủ tin cậy.
-3. **Incident triage:** gom incident, hàng xem xét có budget, view campaign (thử nghiệm), chỉ báo drift, feedback.
+Data, truth, checkpoint, and run have separate manifests/hashes. Label isolation applies to runtime replay/policy/triage/UI; training and evaluators may read labels. CNS2022-adapted truth is a separate CIC artifact.
 
-## 2. Module (`src/netirava/`)
-| Module | Trách nhiệm | Đọc nhãn? |
+## 2. Modules
+
+| Module | Responsibility and invariant |
+|---|---|
+| `config`, `features` | Paths/hashes; 49-feature allowlist; reject labels/quality/role at the runtime contract |
+| `dataset` | CIC windows, stream/truth, training/calibration frames |
+| `detectors` | A0/IsolationForest, benign-only threshold; checkpoint inference needs no historical recipe |
+| `replay`, `policy`, `storage` | Fast/paced scoring, event-time decisions, source cooldown, notification budgets, persistence |
+| `family` | Shared abstention/severity; probabilities and gate unchanged |
+| `campaign` | Experimental correlation and common causal review queue |
+| `triage`, `app` | Flow/incident/campaign views, feedback/export, stream-provenance guard |
+| `drift` | Same-checkpoint reference; label-free AR/TR/PSI; no threshold updates |
+| `evaluation`, `decision`, `ops` | Offline metrics, variants, episodes, correlation and monitor evaluation |
+| `relabel`, `pilot`, `fe`, `fstudy`, `eda`, `ablation`, `inventory`, `ledger` | CIC research and evidence history, outside runtime |
+| `external` | Frozen CIC evaluation on UNSW; no fit |
+| `ton` | ToN audit/prepare/split/single fit/calibration and original evaluation |
+| `ton_reporting` | Post-fit replay/report interface; saved-score provenance, gate metrics, global source novelty; no fit |
+| `ui_check` | Real saved-run AppTest without submitting feedback or reading truth |
+| `triage_task`, `registry`, `cli` | Formative tasks, generated run inventory, command interface |
+
+ToN reuses A0 inference, replay, policy, family, queue, storage, and UI. Source-specific data preparation, labels/recipe, and evaluation remain explicit instead of introducing another runtime framework.
+
+## 3. Data contracts and invariants
+
+- Model matrix follows `features.FEATURES` in exact order; no source identity, absolute time, labels, dataset ID, or role.
+- Derived stream includes features/identifiers/time; role is used to select cohorts and dropped before `flow_event_batch`.
+- Detections have one row/flow: score, argmax, candidate, class probabilities, decision time, policy, family, campaign fields.
+- SQLite stores incident/notification/feedback, not evaluator truth.
+- Run metadata stores checkpoint/threshold/config/stream hashes, segments, counts, timing, decision hash.
+- `ton-report` rejects checkpoint/stream mismatch, wrong gate, non-test rows, duplicate/partial test. Global host novelty includes benign and other training classes.
+
+## 4. Operational semantics
+
+| Concept | Meaning |
+|---|---|
+| Detection | `1-p(Benign) >= locked threshold`; score not probability-calibrated |
+| After-gate fine metrics | Threshold+argmax, before abstention in `ton-report` |
+| Family-aware | Fine label can be withheld; no detector-recall change |
+| Source incident | Source IP + 15-minute gap between candidates; may span hours |
+| Notification | FIFO 30 new incidents/clock-hour in final configs |
+| Review | Default top ten at end of opening hour; not a full backlog/re-review lifecycle |
+| Evidence | Rank uses review-time prefix; UI distinguishes lifetime summaries and scoped details |
+| Episode | Bootstrap: label+src+dst; triage: label+src; 30-minute gap; neither is guaranteed independent campaign |
+| Monitor | Distribution indicator, not validated FPR estimator or second detector |
+
+## 5. Checkpoint namespaces
+
+| Role | Checkpoint | Data/runs |
 |---|---|---|
-| `config.py` | YAML, path, sha1 | — |
-| `features.py` | Allowlist 49 feature, transform cố định, fingerprint, contract runtime (từ chối cột nhãn) | Không |
-| `dataset.py` | `inspect`, `prepare` (cửa sổ, scope host), `audit` | Chỉ phía audit |
-| `detectors.py` | Train A0 (biến thể a0/a1/a2, seed), IsolationForest; threshold trên benign calibration | Chỉ train/calibration |
-| `replay.py` | Replay causal (fast/paced), chấm A0 và shadow, gọi policy, ghi family fields và `campaign_id`; `--model` chọn A0 | **Không** |
-| `policy.py` | Candidate → source incident (entity, cooldown), budget theo giờ | Không |
-| `family.py` | Implementation duy nhất của family-aware; severity theo nhãn family-aware | Không |
-| `campaign.py` | Correlator causal, campaign update, `review_queue` dùng chung | Không |
-| `drift.py` | Reference C1, tín hiệu AR/TR/PSI, `DRIFT_MONITOR.parquet` | Không |
-| `triage.py` | View flow, incident, campaign và export cho UI | Không |
-| `app.py` | Streamlit UI | Không |
-| `storage.py` | Thư mục run: `run.json`, `detections.parquet`, `alerts.db` | — |
-| `eda.py`, `fe.py`, `fstudy.py` | EDA, pipeline feature, feature study | Có (chỉ inner-train) |
-| `evaluation.py`, `decision.py`, `ops.py` | Evaluator: theo scenario, ablation, decision layer V1–V4b, ops study | **Có** |
-| `relabel.py`, `pilot.py` | Nhãn sửa CNS2022; pilot trên nhãn sửa | Có |
-| `ablation.py`, `inventory.py`, `ledger.py`, `triage_task.py` | Ablation imbalance sạch; kiểm kê cohort; ledger bằng chứng; thử nghiệm triage có đáp án | Có (evaluator) |
-| `registry.py`, `cli.py` | Sinh registry; mọi lệnh `python -m netirava …` | — |
+| CIC final | `artifacts/models/pilot_cns/s0`, `f964bde1ef5c`, threshold 0.009242 | `demo.yaml` or `ops_holdout.yaml` matching the run |
+| CIC baseline | `artifacts/models/a0`, `f32899bde8b4` | Report its results separately |
+| ToN supplementary | `artifacts/ton_iot_v1/models/a0`, `42b82c1d80ed`, threshold 0.995843 | `artifacts/ton_iot_v1/`, `runs/ton_iot/`, `ton_iot.yaml` |
 
-## 3. Contract của `detections.parquet` (một row mỗi flow)
-- Định danh và thời gian: `flow_id, segment, entity, available_at, decision_at, batching_delay_ms`.
-- A0: `a0_pred`, `a0_score`, `a0_candidate`, `p_<class>`.
-- Policy: `active_action, active_reason, incident_id`.
-- Family-aware: `predicted_family, fine_label, fine_label_status, fine_confidence, family_mass, uncertainty_reason`.
-- Correlation: `campaign_id` (0 = không alert); `update_id` được tính trong `triage.flow_table`.
-- Shadow (mode `a0-shadow`): `an_score, an_would_alert, an_status, shadow_incident_id`.
+IsolationForest is historical CIC shadow functionality; no new ToN anomaly model was fitted. Documentation translations/path updates preserve parsed config semantics and archived original hashes; they are not new model experiments.
 
-Run cũ thiếu trường mới được tính lúc load bằng cùng code.
+## 6. Verification
 
-## 4. Bất biến có test
-- Nhãn không vào runtime; threshold và model chỉ học từ train/calibration.
-- Prefix invariance; chunking và paced cho kết quả giống fast; shadow cô lập.
-- Family-aware không đổi xác suất, alert hay incident; incident uncertain không nhận severity của lớp mịn bị giữ lại.
-- Correlation không đổi alert hay incident và là causal; tấn công mới gia nhập campaign cũ có mục xem xét riêng.
-- Drift monitor không đọc nhãn.
-- Feedback append-only; run cũ đọc được.
+Tests cover causal prefixes/chunking/paced invariance, label isolation, shadow isolation, probability-preserving family labels, same-alert feedback correction, wrong-config handling, single-fit guarding, after-gate metrics, and cross-class host novelty. Synthetic correctness checks do not establish real-world generalization.
 
-Trên dữ liệu thật, A0 v2 cho cùng `active_decisions_sha1` (`1c7b4b31…`) trước và sau các tích hợp family-aware và correlation ([`ops_change_audit.md`](ops_change_audit.md)).
-
-## 5. Model
-| Model | Thư mục | Ghi chú |
-|---|---|---|
-| A0 v2 | `artifacts/models/a0` | 8 known class, nhãn gốc, threshold 0.8679 |
-| Pilot | `artifacts/models/pilot_cns/s{0,1,2}` | Nhãn sửa; `s0` là model cuối (`final_system.model_dir`) |
-| A0 v1 | `artifacts/models_v1/a0` | 5 known class; cần cho run MVP và H1 |
-| Ablation | `a1*`, `a2*`, `a0_s1`, `a0_s2` | Không SMOTE, SqrtBalanced, seed khác |
-| Anomaly | `artifacts/models/anomaly` | IsolationForest, chỉ shadow |
-
-Chi tiết model ở [`04_modeling.md`](04_modeling.md) §1.
+[Reproduction](reproduction.md) · [Final report](final_report.md) · [Limitations](limitations.md).

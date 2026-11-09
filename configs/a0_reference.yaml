@@ -1,0 +1,17 @@
+# Portable copy of the NP-v1 fields actually consumed by reference_recipe.
+# Source: artifacts/models/a0/a0_meta.json -> recipe (original external config
+# sha1 d56f1c3e56d8d5d68b6a9443a5e312bac6bd9df7). This file is not that original
+# config and does not claim its checksum. CatBoost version is pinned in uv.lock.
+# Resolved defaults in the saved model: iterations=1000, depth=6, l2_leaf_reg=3,
+# bootstrap_type=Bayesian. Existing checkpoints are loaded without this recipe.
+base:
+  boosting_type: Plain
+  verbose: 0
+  thread_count: 16
+  border_count: 254
+device: GPU
+lr_rule: cpu_auto_probe
+models:
+  A0:
+    smote_lt: 1000
+    smote_k: 5

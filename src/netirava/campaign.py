@@ -1,6 +1,6 @@
 """Campaign-level incident correlation and the shared review queue (runtime side, label-free).
 
-Pre-registered in docs/protocols/ops_study_prereg.md §3. A *campaign* links source incidents
+Pre-registered in the original of docs/protocols/ops_study.md §3. A *campaign* links source incidents
 (source IP + 15-min cooldown, the existing unit) that hit the same target host with the
 same predicted attack family:
 
@@ -12,7 +12,7 @@ same predicted attack family:
   Two existing campaigns are never merged (no transitive blow-up, fully causal).
 - State resets at capture-segment boundaries. No label, no future flow is used.
 
-Review unit (deviation v2, recorded in docs/06_triage_correlation.md before the holdout): a campaign
+Review unit (deviation v2, documented in docs/triage.md): a campaign
 is a *case*; in every hour, the source incidents that open in that hour and belong to one campaign
 form one review item, a *campaign update*. A new attack that joins an old campaign is therefore
 reviewed in the hour it appears (the pre-registered "open-once" unit hid such attacks inside old

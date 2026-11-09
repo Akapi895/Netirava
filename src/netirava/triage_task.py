@@ -1,4 +1,4 @@
-"""Small blinded triage trial with reference answers (docs/protocols/evidence_round2_prereg.md §C).
+"""Small blinded triage trial with reference answers (docs/protocols/clean_ablation.md §C).
 
 make   -> <task>/cards_C0.md, cards_C1.md (blinded: IP tokens, no dates, no labels), verdicts_*.csv templates,
           answers.json (reference, written separately; read only by `score`), manifest.json (sha1 of answers)

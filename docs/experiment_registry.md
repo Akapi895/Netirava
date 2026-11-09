@@ -1,63 +1,71 @@
-# Experiment registry
+# Experiment registry and invariance audit
 
-Bảng chi tiết từng run và model được sinh tự động ở [`experiment_registry_generated.md`](experiment_registry_generated.md) (`python -m netirava registry`): run id, model, threshold, segment, holdout, sha1 của config và manifest, git commit, `active_decisions_sha1`.
+This is the curated experiment history. `python -m netirava registry --config <config>` generates `registry.json` and `registry.md` in the **configured runs directory**. Generated local inventories are not the curated submission report and do not overwrite documentation.
 
-Loại bằng chứng: **DEV** (phát triển, chọn), **EXP** (hậu nghiệm), **HO** (holdout khai báo trước, chạy một lần sau khi khóa).
+Evidence labels: **DEV** for development/selection; **EXP** for exploratory reuse; **HO** for the originally declared one-time evaluation. Consumed holdouts do not become untouched again. The supplementary ToN model is separate from the final CIC model.
 
-## Dữ liệu và nhãn
-| Thành phần | Provenance |
+## 1. Data provenance
+
+| Artifact | Recorded provenance |
 |---|---|
-| CSV NF-CSE-CIC-IDS2018-v3 | sha1 `ddcad6d826b7…`, khớp bagit (`runs/inspect/INSPECT.json`) |
-| `CIC18-Causal-Demo-v1` | `artifacts/cic18_causal_demo_v1/manifest.json`: 3,139,471 row; `stream.parquet` `b7e43a671687…`; `truth.parquet` `4bb8de42532d…` |
-| Nhãn sửa CNS2022 | `truth_cns2022.parquet` `ff679256a42c…`; code `relabel.py` |
-| `CIC18-FE-Study-v1` | `artifacts/fe_study_v1/`: 3,181,717 row (H3, H4) |
-| `CIC18-Ops-Holdout-v1` | `artifacts/ops_holdout_v1/`: 1,489,831 row (H5–H9) |
+| CIC original CSV | SHA-1 `ddcad6d826b7…`, BagIt match |
+| CIC demo | `artifacts/cic18_causal_demo_v1/manifest.json`, 3,139,471 rows; stream `b7e43a671687…`, original truth `4bb8de42532d…` |
+| CNS2022-adapted truth | `truth_cns2022.parquet`, `ff679256a42c…`; separate artifact, raw unchanged |
+| FE study | `artifacts/fe_study_v1/`, 3,181,717 rows with H3/H4 |
+| Ops holdout | `artifacts/ops_holdout_v1/`, 1,489,831 rows, H5–H9 |
+| ToN original CSV | SHA-1 `24854ca3072ab7c2ade9ebfb202345a666a94cfe` |
+| ToN derived/checkpoint | `artifacts/ton_iot_v1/`; checkpoint `42b82c1d80ed`; full hashes in frozen plan/model metadata |
 
-## Thí nghiệm
-| # | Thí nghiệm | Loại | Artifact | Lệnh | Tài liệu | Commit |
-|---|---|---|---|---|---|---|
-| 1 | MVP: A0 v1 + IsolationForest shadow | DEV | `runs/20261108T110255_a0_fast`, `…110215_a0-shadow_fast`, `…110325_a0-shadow_paced` | `replay`, `evaluate` | `04` §2.1 | `aec4862` |
-| 2 | Decision layer V1–V4b | DEV | `runs/20261108T114809_a0-shadow_fast/DECISIONS_dev.json` | `decide --select`, `decide` | `04` §2.2 | `e5336a8` (khóa) |
-| 3 | H1 DDoS LOIC-HTTP: V4b bị bác bỏ | HO | `runs/20261108T115320_a0-shadow_fast/DECISIONS_holdout.json` | `replay --unlock-holdout`, `decide --unlock-holdout` | `04` §2.2 | `c9f8c83` |
-| 4 | Triage theo incident trên H1 | EXP | `…115320/DECISIONS_holdout_triage.json` | `decision.evaluate_run` | `06` §2 | `12c3b95` |
-| 5 | Lớp hiếm thành known class; ablation SMOTE / không SMOTE / SqrtBalanced, 3 seed | DEV | `runs/ablate_imbalance.json`, `runs/minority_report.json` | `ablate-imbalance`, `minority-report` | `04` §3 | `12c3b95`, `9302092` |
-| 6 | Dev v2: triage FIFO / volume / severity | DEV | `runs/20261108T122848_a0-shadow_fast/DECISIONS_dev.json` | `decide` | `06` §2 | `12c3b95`, `5e98876` |
-| 7 | FP profile | EXP | `runs/fp_profile.json` | `evaluation.fp_profile` | `02` §4 | `9302092` |
-| 8 | H2 DoS-Hulk | HO | `runs/20261108T132246_a0-shadow_fast/DECISIONS_holdout.json` | `replay --unlock-holdout` | `04` §4 | `9302092` (khai báo ở `5e98876`) |
-| 9 | Forensics FP và nhãn so với CNS2022 | EXP | `runs/forensics_*` | — | `02` §4–5 | `1687801` |
-| 10 | Nhãn sửa và pilot (3 seed) | DEV (within-episode) | `truth_cns2022.parquet`, `artifacts/models/pilot_cns/`, `runs/pilot_cns_results.json` | `relabel`, `pilot-train`, `pilot-eval` | `02` §6, `04` §5 | `2bb5529` |
-| 11 | Family-aware | DEV | `runs/20261108T143728_a0-shadow_fast/{FAMILY_REPORT*.json, export/}` | `family-report`, `export` | `05` | `0a817b2` |
-| 12 | Feature study: EDA, preprocessing, nhóm feature; H3/H4 | DEV + HO | `artifacts/fe_study_v1/{eda,study}/`, `runs/fe_study/` | `eda`, `fe-study`, `fe-final` (`configs/fe_study.yaml`) | `02` §3, `03` | `e820605` → `b900099` (tag `fe-v2-frozen`) |
-| 13 | Ops study: correlation, drift monitor, chọn model; H5–H9 | DEV + EXP (H2) + HO | DEV `runs/20261108T190136_a0_fast`, `…190143…`; HO `runs/20261108T211051_a0_fast`, `…211057…`; `runs/ops_study/` | `drift-reference`, `ops-study`, `ops-go`, `ops-pool`, `ops-summary` (`configs/ops_holdout.yaml`) | `06`, `07`, `04` §6; protocol ở `protocols/ops_study_prereg.md` | `e1b473a` → `26fab5d` (tag `ops-v1-frozen`) |
-| 14 | Audit thay đổi của ops study | — | `runs/ops_study/AUDIT_INVARIANCE.json`, `runs/audit_ops_*` | `runs/ops_study/audit_inv.py` | `ops_change_audit.md` | — |
-| 15 | Sửa đo lường, provenance, UI | — | `runs/ops_study/holdout/GO.json` (bản trước: `GO_before_exposure_fix.json`) | `ops-study`, `ops-go` | `10` §6 | `e5168f8` |
-| 16 | Ablation imbalance sạch (none / cw / smotenc, 3 seed) | DEV + EXP | `runs/fe_study/ablation_clean.json`, `artifacts/fe_study_v1/ablation_clean/` | `ablate-clean --config configs/fe_study.yaml` | `11` §1 | prereg `d368fdc` |
-| 17 | Kiểm kê cohort thiểu số | — | `runs/minority_inventory/` | `inventory` | `11` §2 | prereg `d368fdc` |
-| 18 | Thử nghiệm triage nhỏ (reviewer LLM) | EXP, formative | `runs/triage_trial/` | `task-make`, `task-score` | `12` | prereg `d368fdc` |
-| 19 | Ledger bằng chứng của hệ thống cuối | — | `runs/final_evidence/` | `ledger` | `10` | — |
-| 20 | Đánh giá ngoài NF-UNSW-NB15-v3 (model frozen) và cổng train; monitor exploratory | Đánh giá ngoài; EXP | `runs/external_unsw/` | `external` | `13` | prereg `6ad5206` |
+## 2. Experiment timeline
 
-## Bằng chứng ngoài repo
-| Giai đoạn | Vị trí |
+| # | Experiment / outcome | Evidence | Artifact | Provenance |
+|---|---|---|---|---|
+| 1 | MVP A0 v1 and IsolationForest shadow | DEV | `runs/20261108T110255_a0_fast`, `…110215_a0-shadow_fast`, `…110325_a0-shadow_paced` | `aec4862` |
+| 2 | V1–V4b selection | DEV | `…114809…/DECISIONS_dev.json` | Locked `e5336a8` |
+| 3 | H1 LOIC-HTTP rejects V4b | HO | `…115320…/DECISIONS_holdout.json` | `c9f8c83` |
+| 4 | Incident-priority analysis on H1 | EXP | Same run, `DECISIONS_holdout_triage.json` | `12c3b95` |
+| 5 | Eight-class A0 v2 and original-label imbalance ablation | DEV | `runs/ablate_imbalance.json`, `minority_report.json` | `12c3b95`, `9302092` |
+| 6 | FIFO/volume/severity on DEV | DEV | `runs/20261108T122848_a0-shadow_fast/` | `5e98876` |
+| 7 | FP profile and label forensics | EXP | `runs/fp_profile.json`, `forensics_*` | `9302092`, `1687801` |
+| 8 | H2 Hulk | HO | `runs/20261108T132246_a0-shadow_fast/` | Declared `5e98876`, evaluated `9302092` |
+| 9 | Adapted labels and pilot, three seeds | DEV, within-episode | `artifacts/models/pilot_cns/`, `runs/pilot_cns_results.json` | `2bb5529` |
+| 10 | Family-aware integration | DEV | `runs/20261108T143728_a0-shadow_fast/` | `0a817b2` |
+| 11 | Feature/preprocessing study and H3/H4 rejection | DEV+HO | `artifacts/fe_study_v1/`, `runs/fe_study/` | Protocol `e820605`; tag `fe-v2-frozen` |
+| 12 | Campaign/monitor/pilot selection on H5–H9 | DEV+HO, later selected | `runs/ops_study/`; DEV `…190136…`/`…190143…`, HO `…211051…`/`…211057…` | Protocol `e1b473a`; tag `ops-v1-frozen` |
+| 13 | Ops training/inference invariance | Audit | `runs/ops_study/AUDIT_INVARIANCE.json` | Scope through `26fab5d` |
+| 14 | Exposure/provenance/UI corrections | Measurement correction | `GO.json`, `GO_before_exposure_fix.json` | `e5168f8` |
+| 15 | Clean none/cw/SMOTENC ablation, three seeds | DEV+EXP | `runs/fe_study/ablation_clean.json` | Preregistered `d368fdc` |
+| 16 | Whole-CIC minority inventory | Audit | `runs/minority_inventory/` | Preregistered `d368fdc` |
+| 17 | Blinded LLM triage task | EXP, formative | `runs/triage_trial/` | Preregistered `d368fdc` |
+| 18 | Unified CIC ledger | Saved-score reporting | `runs/final_evidence/` | `ledger` command |
+| 19 | Frozen external UNSW test; no new fit | External; monitor EXP | `runs/external_unsw/` | Preregistered `6ad5206` |
+| 20 | ToN one-fit end-to-end experiment | Local frozen plan, within-campaign minorities | `artifacts/ton_iot_v1/`, `runs/ton_iot/` | Frozen UTC 2026-11-08T17:24:16; not committed at execution |
+| 21 | ToN after-gate/global-novelty correction | Post-fit reporting, no inference/fit | `docs/ton_iot_evidence.json` | `ton-report` |
+
+The shortened run ids above retain the timestamp suffix from `runs/`; exact primary ids are in [CIC evidence](cic_evidence.md), supplementary ids in [ToN evaluation](ton_iot_evaluation.md).
+
+## 3. Ops invariance audit
+
+Historical scope: branch at `26fab5d` versus `master`/merge-base `b900099`. The original audit is read-only; its output is `runs/ops_study/AUDIT_INVARIANCE.json`. It is not a claim that present-day source files are byte-identical to those historical commits.
+
+| Check | Finding |
 |---|---|
-| GraphIDS (NO-GO) | `../GraphIDS/outputs/` |
-| Run 1: LCCDE và XI2S-IDS trên UNSW-NB15-v3 | `../experiments/` (`RUN1_*.md`) |
-| NP-v1: CatBoost A0/A1/A2/B1/B2 theo đợt; công thức A0 | `../experiments/nextphase/`, `../experiments/NEXT_PHASE_*.md` |
-| RQ-PCAP | `research/pcap_feasibility/` |
+| Training invariance | No fit, SMOTE, fine-tuning, or threshold reselection during that ops integration; checkpoint/train-data hashes matched |
+| A0 v2 before/after integration | 1,669,430 flows; max score difference0; probabilities, argmax, candidates, actions, 238 incident ids, family fields identical |
+| Pilot comparable K5+R1 subset | 977,200 flows; probabilities/actions identical; 68 incident partitions matched despite id numbering differences |
+| Ops on/off, A0 v2 | 1,669,430 flows, same 166,636 alerts/238 incidents, decision hash `1c7b4b31…` |
+| Ops on/off, pilot | Same 164,876 alerts/141 incidents, decision hash `8eaccddf…` |
 
-## Tái lập
-```powershell
-$py = ".venv\Scripts\python.exe"
-& $py -m netirava prepare --config configs/demo.yaml
-& $py -m netirava relabel --config configs/demo.yaml
-& $py -m netirava train-a0 --config configs/demo.yaml --variant a0        # + --seed 1/2, --variant a1/a2
-& $py -m netirava train-anomaly --config configs/demo.yaml
-& $py -m netirava score-calibration --config configs/demo.yaml
-& $py -m netirava replay --config configs/demo.yaml --mode a0-shadow --model a0
-& $py -m netirava decide --run <run_id>
-& $py -m netirava family-report --run <run_id> --segments K5_0222_web_tail
-& $py -m netirava pilot-train --config configs/demo.yaml ; & $py -m netirava pilot-eval --config configs/demo.yaml
-& $py -m netirava eda --config configs/fe_study.yaml ; & $py -m netirava fe-study --config configs/fe_study.yaml
-& $py -m netirava registry --config configs/demo.yaml
-```
-Ops study: xem `README.md`. `replay` không có `--model` dùng `final_system.model_dir` (hiện là pilot), nên tái lập số của A0 v2 phải ghi `--model a0`. Chạy lại holdout (`--unlock-holdout`) chỉ để tái lập số đã báo cáo, không làm bằng chứng mới.
+Only campaign ids differed when ops was toggled. Monitor tables are separate from detections/SQLite. Drift-reference creation does not change checkpoint loading; reference thresholds are checked against frozen thresholds.
+
+Presentation changed: family-aware max severity affected 0/238 A0 incidents and 6/141 pilot incidents; causal top-10 differed from lifetime-volume UI ordering for 18/107 A0 and 9/90 pilot items. Notification values stayed unchanged (A0 217 notified,21 budget-blocked). Thus presentation changes are real even when detection invariance holds.
+
+Default checkpoint selection changed from A0 v2 to pilot under the ops rule and was subsequently finalized by the user. This default change, not correlation/monitoring, changes detection output when `--model` is omitted. Checkpoint-specific results remain separate. H1/H2 were not reopened with the final pilot.
+
+## 4. Historical research outside the primary pipeline
+
+GraphIDS, Run1, and NP-v1 experiments live outside this repository under sibling experiment directories; they are not required dependencies for checkpoint inference. A portable A0 recipe snapshot is included. The separate [PCAP feasibility archive](../research/pcap_feasibility/README.md) retains code, original result JSON, and a consolidated English account of its NO-GO decision. Its IoT-23 results do not establish NetFlow v3 effectiveness.
+
+## 5. Documentation provenance
+
+Numbered Vietnamese chapters were consolidated by topic. English [protocol translations](protocols/README.md) explicitly distinguish themselves from original committed/local-frozen documents. Original documents/config/code snapshots are retained in `artifacts/documentation_originals/`; no historical manifest/checkpoint was rewritten to make current paths or hashes appear original. The [documentation index](README.md) records each keep/merge/remove decision.

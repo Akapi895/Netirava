@@ -1,4 +1,4 @@
-"""External evaluation on NF-UNSW-NB15-v3 (docs/protocols/external_round3_prereg.md).
+"""External evaluation on NF-UNSW-NB15-v3 (docs/protocols/external_evaluation.md).
 
 E1: frozen CIC models (pilot_cns/s0, A0 v2), thresholds locked on CIC C1, no recalibration; per capture day,
     exact duplicates removed (raw counts reported).

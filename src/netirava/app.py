@@ -4,10 +4,10 @@
 
 Tab "Review queue": active (A0) alerts of one replay run as review items. The unit is either a
 source incident (source IP + 15-min cooldown, same rule as the evaluation) or a campaign (source
-incidents linked by target host + predicted family, docs/protocols/ops_study_prereg.md §3). Items are ranked
+incidents linked by target host + predicted family, docs/protocols/ops_study.md §3). Items are ranked
 per hour (top-B review queue) by family-aware severity or volume. `notified` is the runtime FIFO
 budget decision and is shown apart from the queue rank.
-Tab "Threshold reliability": the label-free drift monitor (docs/protocols/ops_study_prereg.md §4).
+Tab "Threshold reliability": the label-free drift monitor (docs/protocols/ops_study.md §4).
 Analyst-facing: no ground-truth label is read here. Feedback is appended to alerts.db (append-only).
 """
 
@@ -120,7 +120,7 @@ def queue_tab(cfg, run_id, meta, inc, det, camp):
                   f"({int(row.campaign_sources_total)} in campaign) → {row.top_target} · {row.family} · {int(row.n_flows):,} flows")
     st.subheader(title)
     if row.fine_label_status == "uncertain":
-        st.info(f"Fine class withheld (top web class below tau = {cfg.get('family', {}).get('tau', 0.8)} of the Web family "
+        st.info(f"Fine class withheld (top class below tau = {cfg.get('family', {}).get('tau', 0.8)} of its family "
                 f"mass). Severity uses the family, not the withheld class. Alert decision is unaffected.")
     at_review = st.toggle("Evidence at review time only", value=True,
                           help=f"Only flows decided up to {row.review_utc} UTC, i.e. what the queue ranked on.")
@@ -173,7 +173,7 @@ def monitor_tab(cfg, run_id, meta):
                     "F_PSI_median", "F_PSI_n_major", "F_PSI_top"]], width="stretch", hide_index=True)
     st.caption("TR = flows just below the threshold vs the calibration window (ratio); AR = alerted flows vs alpha; "
                "S_PSI / F_PSI = score / feature distribution change (PSI). FPR_est = alpha x TR, NOT validated as an FPR "
-               "estimate (docs/07_drift_monitoring.md). Alarms fire mostly on windows that contain attacks.")
+                "estimate (docs/monitoring_and_transfer.md). Alarms fire mostly on windows that contain attacks.")
 
 
 def main():
@@ -183,7 +183,14 @@ def main():
     if not run_id:
         st.error("start with: python -m netirava ui --run <run_id>")
         return
-    ok, cfg_sha, run_sha = provenance_check(K.load(cfg_path), RunStore(K.load(cfg_path), run_id).meta())
+    cfg0 = K.load(cfg_path)
+    try:
+        meta0 = RunStore(cfg0, run_id).meta()
+    except FileNotFoundError:
+        st.error(f"Run {run_id} not found under {K.path(cfg0, 'runs')} (the runs directory of {cfg_path}). "
+                 "Open the run with the config it was replayed with.")
+        return
+    ok, cfg_sha, run_sha = provenance_check(cfg0, meta0)
     if not ok:     # checked before any table is built: a wrong config joins destinations from another stream
         st.error(f"Provenance mismatch: run {run_id} was replayed on stream {str(run_sha)[:12]}, but the opened config "
                  f"({cfg_path}) points to stream {str(cfg_sha)[:12]}. Open the run with the config it was replayed with "
@@ -199,7 +206,8 @@ def main():
     c2.metric("Source incidents", f"{len(inc):,}")
     c3.metric("Campaigns (updates)", f"{camp.campaign_id.nunique() if len(camp) else 0:,} ({len(camp):,})")
     c4.metric("Flows per incident", f"{inc.n_flows.sum() / max(len(inc), 1):,.0f}")
-    c5.metric("Rare-class incidents", f"{int(inc.rare_class.sum()):,}")
+    c5.metric("Configured rare-class incidents", f"{int(inc.rare_class.sum()):,}",
+              help="Predictions matching a0.rare_classes in this config; not a ground-truth minority count.")
     t1, t2 = st.tabs(["Review queue", "Threshold reliability"])
     with t1:
         queue_tab(cfg, run_id, meta, inc, det, camp)

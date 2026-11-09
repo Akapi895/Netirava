@@ -1,4 +1,4 @@
-"""Regression tests for the 2026-11-09 metric / provenance / UI fixes (docs/10_evidence_ledger.md §6)."""
+"""Regression tests for metric, provenance, and UI fixes (docs/cic_evidence.md)."""
 
 import pandas as pd
 import pytest
@@ -54,3 +54,20 @@ def test_ui_provenance_guard_detects_wrong_stream(synth):
     meta = RunStore(synth, "fix_prov").meta()
     assert provenance_check(synth, meta)[0]
     assert not provenance_check(synth, {**meta, "stream_sha1": "0" * 40})[0]
+
+
+def test_ui_reports_missing_run_instead_of_crashing(synth, tmp_path):
+    import sys
+    import yaml
+    from streamlit.testing.v1 import AppTest
+    from netirava import app as A
+    p = tmp_path / "c.yaml"
+    p.write_text(yaml.safe_dump({k: v for k, v in synth.items() if not k.startswith("_")}))
+    old = sys.argv
+    sys.argv = ["app", "--config", str(p), "--run", "no_such_run"]
+    try:
+        at = AppTest.from_file(A.__file__, default_timeout=60)
+        at.run()
+    finally:
+        sys.argv = old
+    assert not at.exception and any("not found" in e.value for e in at.error)
