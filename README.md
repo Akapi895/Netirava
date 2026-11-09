@@ -51,6 +51,15 @@ Tests use small synthetic models. When local ToN artifacts exist, an additional 
 
 Large datasets, checkpoints, and replay outputs are outside Git. A clone alone does **not** include the demo artifacts; see the [artifact requirements](docs/reproduction.md).
 
+Obtain the separately distributed bundle `netirava-artifacts-v1.zip` (about 830 MB; derived streams, the two checkpoints, and saved runs; no raw CSVs) and install it into the clone. The script uses only the standard library, verifies every file's SHA-256 while extracting, and refuses to overwrite differing files:
+
+```powershell
+.venv\Scripts\python.exe scripts/artifact_bundle.py install netirava-artifacts-v1.zip
+.venv\Scripts\python.exe scripts/artifact_bundle.py check
+```
+
+With the bundle installed, the commands below and the full test suite (including the ToN contract check) run without any dataset download or fitting. Dataset terms still apply to the derived streams; see [datasets/README.md](datasets/README.md) for the raw sources.
+
 ```powershell
 $py = ".venv\Scripts\python.exe"
 # Primary CIC demo
@@ -71,11 +80,12 @@ The ToN fit marker blocks further training. CIC holdouts have already been consu
 configs/        CIC, feature-study, ops-holdout, and ToN configurations
 src/netirava/   contracts, detectors, replay, policy, triage, evaluation, and CLI
 tests/          integration, causal-invariance, provenance, and reporting tests
+scripts/        artifact bundle build / install / check (standard library only)
 docs/           submission report, evidence, English protocols, reproduction
 research/       discontinued PCAP study; not a runtime dependency
 ```
 
-Outside Git: `datasets/` (read-only), `artifacts/` (derived data/models/original-document archive), and `runs/` (scores, SQLite, logs). Dataset redistribution remains subject to the source terms.
+Outside Git: `datasets/` (read-only; only its README with download links and placement is tracked), `artifacts/` (derived data/models/original-document archive), and `runs/` (scores, SQLite, logs). Dataset redistribution remains subject to the source terms.
 
 ## Claim boundary
 

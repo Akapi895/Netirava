@@ -3,7 +3,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 catboost_info/
-datasets/
+datasets/*
+!datasets/README.md
 artifacts/
 runs/
 *.parquet

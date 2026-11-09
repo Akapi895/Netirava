@@ -38,6 +38,16 @@ Preserve relative paths expected by configs:
 
 Runs contain `run.json`, `detections.parquet`, and `alerts.db`; monitor display needs `DRIFT_MONITOR.parquet`. Keep the `ui-smoke-test` feedback provenance rather than rewriting append-only history.
 
+### Packaged bundle
+
+`scripts/artifact_bundle.py` packs and installs the rows of the table above that the README flow needs: CIC DEV UI, ToN UI, `ton-report`, the ToN historical manifests, and the original-document archive. Run `build --output <zip>` in the checkout that holds the artifacts; run `install <zip>` in a fresh clone, then `check`.
+
+- `BUNDLE_MANIFEST.json` inside the zip lists every file with size and SHA-256 and the repository commit it was built from. `install` verifies each file while extracting and aborts on a mismatch or an unsafe path.
+- `install` never overwrites a file that differs from the bundle unless `--force` is given. `alerts.db` files hold append-only UI feedback: they are kept as they are and ignored by `check`.
+- Not included: raw CSVs, `artifacts/ton_iot_v1/audit/` (about 380 MB of audit fingerprints), `*.log` (local paths), `catboost_info/`, and the local agent notes copy `artifacts/documentation_originals/CLAUDE.md`. CIC evaluation inputs (original/adapted truth, `artifacts/models/a0/`, `artifacts/ops_holdout_v1/`, ledger-listed runs) are also not included; add them for the CIC evaluation level.
+- Verified on a clean clone of `master` plus the installed bundle: 56 tests pass with the ToN contract check running, `ui-check` passes for CIC and ToN, and `ton-report` reproduces `docs/ton_iot_evidence.json` except `config_sha1`, which records the hash of the currently opened `configs/ton_iot.yaml`.
+- The bundle holds derived NetFlow records. Check the source terms before sharing it outside the intended audience.
+
 Download/provenance: [UQ catalog](https://staff.itee.uq.edu.au/marius/NIDS_datasets/), [ToN record](https://researchdata.edu.au/nf-ton-iot-v3/3485175). Verify distribution rights before publicly bundling raw or derived data. Repository documentation does not grant a new dataset license.
 
 ## 4. Existing UI and non-writing headless check
